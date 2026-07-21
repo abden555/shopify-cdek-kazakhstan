@@ -1,12 +1,44 @@
-@import 'tailwindcss';
+@import 'bootstrap/dist/css/bootstrap.min.css';
+@import 'bootstrap-icons/font/bootstrap-icons.css';
 
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
-@source "../**/*.blade.php";
-@source "../**/*.js";
-@source "../**/*.vue";
-
-@theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+:root {
+    --app-sidebar-width: 17rem;
+    --app-navy: #172033;
+    --app-surface: #f5f7fb;
 }
+
+body { background: var(--app-surface); }
+.auth-page { align-items: center; background: linear-gradient(135deg, #e0e7ff 0%, #f8fafc 48%, #fef3c7 100%); display: flex; justify-content: center; min-height: 100vh; padding: 1.5rem; }
+.auth-card { max-width: 28rem; width: 100%; }.brand-dark { color: var(--app-navy); }
+.admin-shell { min-height: 100vh; }
+.admin-sidebar { background: var(--app-navy); color: #cbd5e1; width: var(--app-sidebar-width) !important; }
+.admin-sidebar-content { display: flex; flex-direction: column; min-height: 100%; padding: 1.5rem 1rem; }
+.brand { align-items: center; color: #fff; font-size: 1.25rem; font-weight: 800; letter-spacing: .08em; text-decoration: none; }
+.brand span { color: #fbbf24; }
+.brand-caption { color: #94a3b8; font-size: .75rem; margin: .35rem 0 2rem; }
+.sidebar-nav { gap: .25rem; }
+.sidebar-nav .nav-link { align-items: center; border-radius: .5rem; color: #cbd5e1; display: flex; gap: .75rem; padding: .7rem .8rem; }
+.sidebar-nav .nav-link.active, .sidebar-nav .nav-link:not(.disabled):hover { background: #26344e; color: #fff; }
+.sidebar-nav .nav-link.disabled { color: #64748b; cursor: not-allowed; }
+.sidebar-label { color: #64748b; font-size: .68rem; font-weight: 700; letter-spacing: .08em; margin: 1.4rem .8rem .45rem; text-transform: uppercase; }
+.sidebar-footer { align-items: center; border-top: 1px solid #334155; display: flex; font-size: .8rem; gap: .5rem; padding: 1rem .5rem 0; }
+.status-dot { background: #34d399; border-radius: 50%; display: block; height: .5rem; width: .5rem; }
+.admin-main { min-width: 0; }
+.admin-header { align-items: center; background: #fff; border-bottom: 1px solid #e7eaf0; display: flex; justify-content: space-between; min-height: 5rem; padding: 1rem 1.5rem; }
+.admin-content { padding: 1.5rem; }
+.eyebrow { color: #64748b; font-size: .7rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+.avatar { align-items: center; background: #e0e7ff; border-radius: 50%; color: #3730a3; display: flex; font-size: .875rem; font-weight: 700; height: 2.25rem; justify-content: center; width: 2.25rem; }
+.metric-card { background: #fff; border: 0; border-radius: .75rem; box-shadow: 0 .125rem .5rem rgba(15, 23, 42, .05); min-height: 11.5rem; padding: 1.25rem; }
+.metric-icon { align-items: center; border-radius: .65rem; display: inline-flex; font-size: 1.15rem; height: 2.5rem; justify-content: center; margin-bottom: 1rem; width: 2.5rem; }
+.metric-label, .metric-hint { color: #64748b; font-size: .8rem; margin-bottom: .25rem; }
+.metric-value { font-size: 1.75rem; font-weight: 700; margin-bottom: .25rem; }
+.setup-list { counter-reset: setup; list-style: none; padding-left: 0; }
+.setup-list li { align-items: flex-start; display: flex; gap: 1rem; padding: .8rem 0; }
+.setup-list p { color: #64748b; font-size: .875rem; margin: .2rem 0 0; }
+.setup-number { align-items: center; background: #e0e7ff; border-radius: 50%; color: #3730a3; display: inline-flex; flex: 0 0 auto; font-size: .8rem; font-weight: 700; height: 1.75rem; justify-content: center; width: 1.75rem; }
+.status-list > div { align-items: center; border-bottom: 1px solid #eef0f4; display: flex; justify-content: space-between; padding: .9rem 0; }
+.status-list > div:last-child { border-bottom: 0; }
+.status-list dt { font-size: .875rem; font-weight: 500; }.status-list dd { font-size: .8rem; margin: 0; }
+
+@media (min-width: 992px) { .admin-shell { display: grid; grid-template-columns: var(--app-sidebar-width) minmax(0, 1fr); } .admin-sidebar { height: 100vh; position: sticky; top: 0; } }
+@media (min-width: 768px) { .admin-content { padding: 2rem; } .admin-header { padding: 1rem 2rem; } }
