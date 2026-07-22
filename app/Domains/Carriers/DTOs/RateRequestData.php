@@ -8,5 +8,6 @@ final readonly class RateRequestData
         public array $origin,
         public array $destination,
         public array $parcels = [],
+        public ?int $tariffCode = null,
     ) {}
 }
