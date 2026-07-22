@@ -15,7 +15,7 @@
             <a class="nav-link disabled" href="#" aria-disabled="true"><i class="bi bi-truck"></i>Shipments <span class="badge text-bg-secondary ms-auto">Soon</span></a>
             <span class="sidebar-label">Configuration</span>
             <a class="nav-link disabled" href="#" aria-disabled="true"><i class="bi bi-plug"></i>Integrations <span class="badge text-bg-secondary ms-auto">Soon</span></a>
-            <a class="nav-link disabled" href="#" aria-disabled="true"><i class="bi bi-gear"></i>Settings <span class="badge text-bg-secondary ms-auto">Soon</span></a>
+            <a class="nav-link {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}" href="{{ route('admin.settings.cdek.edit') }}"><i class="bi bi-gear"></i>Settings</a>
         </nav>
 
         <div class="sidebar-footer mt-auto">

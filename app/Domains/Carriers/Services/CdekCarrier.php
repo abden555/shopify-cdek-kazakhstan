@@ -23,7 +23,10 @@ use Illuminate\Support\Facades\Http;
 
 final class CdekCarrier implements CarrierInterface
 {
-    public function __construct(private readonly FailedCarrierApiLogger $failedApiLogger) {}
+    public function __construct(
+        private readonly FailedCarrierApiLogger $failedApiLogger,
+        private readonly CdekSettingsService $settings,
+    ) {}
 
     public function code(): string
     {
@@ -141,9 +144,10 @@ final class CdekCarrier implements CarrierInterface
 
     private function accessToken(): string
     {
+        $configuration = $this->settings->configuration();
         $credentials = new CarrierCredentialsData(
-            clientId: (string) config('carriers.cdek.client_id'),
-            clientSecret: (string) config('carriers.cdek.client_secret'),
+            clientId: (string) $configuration->clientId,
+            clientSecret: (string) $configuration->clientSecret,
         );
 
         if (blank($credentials->clientId) || blank($credentials->clientSecret)) {
@@ -166,7 +170,7 @@ final class CdekCarrier implements CarrierInterface
 
     private function url(string $path): string
     {
-        return rtrim((string) config('carriers.cdek.base_url'), '/').'/'.ltrim($path, '/');
+        return rtrim($this->settings->configuration()->baseUrl, '/').'/'.ltrim($path, '/');
     }
 
     /** @param array<string, mixed> $payload */
