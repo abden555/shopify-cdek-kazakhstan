@@ -185,8 +185,9 @@ return new class extends Migration
             $table->string('operation')->nullable();
             $table->string('request_method', 10)->nullable();
             $table->text('request_url')->nullable();
-            $table->json('request_headers')->nullable();
-            $table->json('request_payload')->nullable();
+            // Encrypted casts serialize to ciphertext, which is not valid JSON.
+            $table->longText('request_headers')->nullable();
+            $table->longText('request_payload')->nullable();
             $table->unsignedSmallInteger('response_code')->nullable();
             $table->longText('response_body')->nullable();
             $table->text('error_message');

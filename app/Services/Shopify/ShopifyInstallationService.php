@@ -7,6 +7,7 @@ use App\Models\ShopSession;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
+use Throwable;
 
 class ShopifyInstallationService
 {
@@ -24,15 +25,20 @@ class ShopifyInstallationService
             $session = $this->storeSession($shop, $token, $tokenType, $claims);
 
             if ($tokenType === 'offline') {
-                $details = $this->graphql->shop($session);
-                $shop->update([
-                    'name' => $details['name'] ?? $shop->name,
-                    'external_id' => $details['id'] ?? $shop->external_id,
-                    'currency' => $details['currencyCode'] ?? $shop->currency,
-                    'timezone' => $details['ianaTimezone'] ?? $shop->timezone,
-                    'metadata' => array_merge($shop->metadata ?? [], ['shopify' => $details]),
-                ]);
-                $this->graphql->subscribeToUninstallWebhook($session);
+                try {
+                    $details = $this->graphql->shop($session);
+                    $shop->update([
+                        'name' => $details['name'] ?? $shop->name,
+                        'external_id' => $details['id'] ?? $shop->external_id,
+                        'currency' => $details['currencyCode'] ?? $shop->currency,
+                        'timezone' => $details['ianaTimezone'] ?? $shop->timezone,
+                        'metadata' => array_merge($shop->metadata ?? [], ['shopify' => $details]),
+                    ]);
+                    $this->graphql->subscribeToUninstallWebhook($session);
+                } catch (Throwable $exception) {
+                    // The access token is already stored and can be retried later; do not block embedded app access.
+                    report($exception);
+                }
             }
 
             return compact('shop', 'session');
