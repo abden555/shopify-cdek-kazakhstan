@@ -17,7 +17,7 @@ final class CdekSettingsService
     public function save(array $input): void
     {
         foreach ([
-            'base_url', 'client_id', 'sender_company', 'sender_phone', 'sender_city',
+            'base_url', 'client_id', 'sender_company', 'sender_phone', 'sender_city', 'sender_location_code',
             'sender_address', 'sender_pickup_point_code', 'default_tariff_code',
         ] as $key) {
             $this->put($key, $input[$key] ?? null);
@@ -37,6 +37,7 @@ final class CdekSettingsService
             senderCompany: $this->nullable('sender_company'),
             senderPhone: $this->nullable('sender_phone'),
             senderCity: $this->nullable('sender_city'),
+            senderLocationCode: $this->nullable('sender_location_code'),
             senderAddress: $this->nullable('sender_address'),
             senderPickupPointCode: $this->nullable('sender_pickup_point_code'),
             defaultTariffCode: ($value = $this->get('default_tariff_code')) !== null ? (int) $value : null,
@@ -55,6 +56,7 @@ final class CdekSettingsService
             'sender_company' => $configuration->senderCompany,
             'sender_phone' => $configuration->senderPhone,
             'sender_city' => $configuration->senderCity,
+            'sender_location_code' => $configuration->senderLocationCode,
             'sender_address' => $configuration->senderAddress,
             'sender_pickup_point_code' => $configuration->senderPickupPointCode,
             'default_tariff_code' => $configuration->defaultTariffCode,

@@ -44,7 +44,7 @@
             <hr class="my-4">
             <h2 class="h5 mb-3">Sender profile</h2>
             <div class="row g-3">
-                @foreach (['sender_company' => 'Company name', 'sender_phone' => 'Contact phone', 'sender_city' => 'City', 'sender_pickup_point_code' => 'CDEK pickup-point code'] as $field => $label)
+                @foreach (['sender_company' => 'Company name', 'sender_phone' => 'Contact phone', 'sender_city' => 'City', 'sender_location_code' => 'CDEK sender location code', 'sender_pickup_point_code' => 'CDEK pickup-point code'] as $field => $label)
                     <div class="col-md-6">
                         <label class="form-label" for="{{ $field }}">{{ $label }}</label>
                         <input class="form-control @error($field) is-invalid @enderror" id="{{ $field }}" name="{{ $field }}" value="{{ old($field, $settings[$field]) }}">

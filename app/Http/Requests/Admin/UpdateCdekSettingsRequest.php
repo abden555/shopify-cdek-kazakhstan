@@ -21,6 +21,7 @@ class UpdateCdekSettingsRequest extends FormRequest
             'sender_company' => ['nullable', 'string', 'max:255'],
             'sender_phone' => ['nullable', 'string', 'max:50'],
             'sender_city' => ['nullable', 'string', 'max:255'],
+            'sender_location_code' => ['nullable', 'string', 'max:50'],
             'sender_address' => ['nullable', 'string', 'max:1000'],
             'sender_pickup_point_code' => ['nullable', 'string', 'max:100'],
             'default_tariff_code' => ['nullable', 'integer', 'min:1'],

@@ -52,6 +52,7 @@ final class ShipmentPreparationController extends Controller
             'destination_address' => [
                 'country_code' => strtoupper($data['recipient_country_code']),
                 'city' => $data['recipient_city'],
+                'location_code' => $data['recipient_location_code'],
                 'address' => $data['recipient_address'],
             ],
             'metadata' => [
@@ -74,8 +75,8 @@ final class ShipmentPreparationController extends Controller
         $draft = $this->draft($order);
         $configuration = $settings->configuration();
 
-        if ($draft === null || blank($configuration->senderCity)) {
-            return to_route('admin.orders.shipments.prepare', $order)->with('error', 'Save a shipment draft and configure the CDEK sender city before calculating rates.');
+        if ($draft === null || blank($configuration->senderLocationCode)) {
+            return to_route('admin.orders.shipments.prepare', $order)->with('error', 'Save a shipment draft and configure the CDEK sender location code before calculating rates.');
         }
 
         $parcel = $draft->metadata['parcel'] ?? [];
@@ -83,8 +84,8 @@ final class ShipmentPreparationController extends Controller
 
         try {
             $quotes = $carrier->calculateRates(new RateRequestData(
-                origin: ['city' => $configuration->senderCity],
-                destination: ['city' => $destination['city'] ?? null, 'country_code' => $destination['country_code'] ?? null],
+                origin: ['code' => $configuration->senderLocationCode],
+                destination: ['code' => $destination['location_code'] ?? null],
                 parcels: [[
                     'weight' => $parcel['weight_grams'] ?? null,
                     'length' => $parcel['length_cm'] ?? null,

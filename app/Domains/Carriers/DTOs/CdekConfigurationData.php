@@ -11,6 +11,7 @@ final readonly class CdekConfigurationData
         public ?string $senderCompany,
         public ?string $senderPhone,
         public ?string $senderCity,
+        public ?string $senderLocationCode,
         public ?string $senderAddress,
         public ?string $senderPickupPointCode,
         public ?int $defaultTariffCode,
