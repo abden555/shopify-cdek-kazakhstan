@@ -79,7 +79,8 @@ final readonly class ShopifyOrderSyncService
                         'unit_price' => $item['originalUnitPriceSet']['shopMoney']['amount'] ?? 0,
                         'discount_amount' => $item['discountedTotalSet']['shopMoney']['amount'] ?? 0,
                         'total_amount' => $item['discountedTotalSet']['shopMoney']['amount'] ?? 0,
-                        'weight_grams' => $item['variant']['inventoryItem']['measurement']['weight']['value'] ?? null,
+                        // Product inventory data requires additional Shopify scopes; order sync needs only read_orders.
+                        'weight_grams' => null,
                         'metadata' => ['shopify' => ['requires_shipping' => $item['requiresShipping'] ?? false]],
                     ],
                 );
@@ -105,7 +106,6 @@ final readonly class ShopifyOrderSyncService
                   id sku title variantTitle quantity currentQuantity requiresShipping
                   originalUnitPriceSet { shopMoney { amount } }
                   discountedTotalSet { shopMoney { amount } }
-                  variant { inventoryItem { measurement { weight { value } } } }
                 }
               }
             }
