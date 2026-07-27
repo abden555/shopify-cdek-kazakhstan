@@ -49,10 +49,8 @@
                             <td>
                                 @if ($order->shipments_count)
                                     <span class="badge text-bg-success">{{ $order->shipments_count }} created</span>
-                                @elseif (empty($address['city']) || empty($address['phone']))
-                                    <span class="badge text-bg-warning">Address details needed</span>
                                 @else
-                                    <span class="badge text-bg-primary">Ready to prepare</span>
+                                    <a class="btn btn-sm {{ empty($address['city']) || empty($address['phone']) ? 'btn-outline-warning' : 'btn-primary' }}" href="{{ route('admin.orders.shipments.prepare', $order) }}">Prepare shipment</a>
                                 @endif
                             </td>
                             <td>{{ $order->ordered_at?->format('d M Y H:i') ?? '—' }}</td>
