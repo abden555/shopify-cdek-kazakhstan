@@ -8,5 +8,8 @@ final readonly class RateQuoteData
         public string $currency,
         public int $amountMinor,
         public ?string $serviceCode = null,
+        public ?string $serviceName = null,
+        public ?int $deliveryDaysMin = null,
+        public ?int $deliveryDaysMax = null,
     ) {}
 }

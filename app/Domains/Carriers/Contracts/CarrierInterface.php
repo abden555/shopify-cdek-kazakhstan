@@ -28,5 +28,8 @@ interface CarrierInterface
 
     public function calculateRate(RateRequestData $rateRequest): RateQuoteData;
 
+    /** @return array<int, RateQuoteData> */
+    public function calculateRates(RateRequestData $rateRequest): array;
+
     public function validateAddress(ShipmentData $shipment): AddressValidationResultData;
 }

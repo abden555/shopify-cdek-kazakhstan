@@ -9,6 +9,7 @@
     </div>
 
     @if (session('status'))<div class="alert alert-success" role="alert">{{ session('status') }}</div>@endif
+    @if (session('error'))<div class="alert alert-danger" role="alert">{{ session('error') }}</div>@endif
 
     @php($parcel = $draft?->metadata['parcel'] ?? [])
     <form method="POST" action="{{ route('admin.orders.shipments.store', $order) }}" class="card border-0 shadow-sm">
@@ -29,7 +30,7 @@
                 <section class="col-lg-6">
                     <h3 class="h5 mb-3">Parcel and tariff</h3>
                     <div class="row g-3">
-                        <div class="col-12"><label class="form-label">CDEK tariff code <span class="text-body-secondary">(optional for draft)</span></label><input type="number" min="1" name="tariff_code" class="form-control" value="{{ old('tariff_code', $draft?->service_code ?? $configuration->defaultTariffCode) }}"></div>
+                        <div class="col-12"><label class="form-label">CDEK tariff code <span class="text-body-secondary">(optional for draft)</span></label><input id="tariff_code" type="number" min="1" name="tariff_code" class="form-control" value="{{ old('tariff_code', $draft?->service_code ?? $configuration->defaultTariffCode) }}"></div>
                         @foreach (['weight_grams' => 'Weight (grams)', 'length_cm' => 'Length (cm)', 'width_cm' => 'Width (cm)', 'height_cm' => 'Height (cm)'] as $field => $label)
                             <div class="col-md-6"><label class="form-label">{{ $label }}</label><input type="number" min="1" name="{{ $field }}" class="form-control @error($field) is-invalid @enderror" value="{{ old($field, $parcel[$field] ?? '') }}">@error($field)<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
                         @endforeach
@@ -40,4 +41,25 @@
         </div>
         <div class="card-footer bg-white border-0 p-4 pt-0"><button class="btn btn-primary" type="submit">Save shipment draft</button></div>
     </form>
+
+    @if (! empty($draft?->metadata['rate_quotes']))
+        <section class="card border-0 shadow-sm mt-4">
+            <div class="card-body p-4">
+                <h3 class="h5 mb-3">Available CDEK rates</h3>
+                <div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th>Tariff</th><th>Delivery time</th><th>Cost</th><th></th></tr></thead><tbody>
+                    @foreach ($draft->metadata['rate_quotes'] as $quote)
+                        <tr><td><strong>{{ $quote['service_code'] }}</strong><br><span class="small text-body-secondary">{{ $quote['service_name'] }}</span></td><td>{{ $quote['delivery_days_min'] }}–{{ $quote['delivery_days_max'] }} days</td><td>{{ number_format($quote['amount_minor'] / 100, 2) }} {{ $quote['currency'] }}</td><td><button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('tariff_code').value='{{ $quote['service_code'] }}'; window.scrollTo({ top: 0, behavior: 'smooth' });">Select</button></td></tr>
+                    @endforeach
+                </tbody></table></div>
+            </div>
+        </section>
+    @endif
+
+    @if ($draft)
+        <form method="POST" action="{{ route('admin.orders.shipments.rates', $order) }}" class="mt-3">
+            @csrf
+            <button class="btn btn-outline-primary" type="submit"><i class="bi bi-calculator me-1"></i>Calculate CDEK rates</button>
+            <span class="form-text ms-2">This requests quotes only; it does not create a CDEK shipment.</span>
+        </form>
+    @endif
 </x-admin.layout>

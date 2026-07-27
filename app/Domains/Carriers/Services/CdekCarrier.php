@@ -119,6 +119,41 @@ final class CdekCarrier implements CarrierInterface
         }
     }
 
+    /** @return array<int, RateQuoteData> */
+    public function calculateRates(RateRequestData $rateRequest): array
+    {
+        $url = $this->url('/calculator/tarifflist');
+        $payload = [
+            'type' => 1,
+            'from_location' => $rateRequest->origin,
+            'to_location' => $rateRequest->destination,
+            'packages' => $rateRequest->parcels,
+        ];
+
+        try {
+            $response = $this->authenticatedClient()->post($url, $payload);
+
+            if ($response->failed() || ! is_array($response->json('tariff_codes'))) {
+                $this->throwRequestException('calculate_rates', 'POST', $url, $payload, $response);
+            }
+
+            return array_map(function (array $quote): RateQuoteData {
+                return new RateQuoteData(
+                    currency: (string) ($quote['currency'] ?? 'KZT'),
+                    amountMinor: (int) round((float) ($quote['delivery_sum'] ?? 0) * 100),
+                    serviceCode: isset($quote['tariff_code']) ? (string) $quote['tariff_code'] : null,
+                    serviceName: $quote['tariff_name'] ?? null,
+                    deliveryDaysMin: isset($quote['period_min']) ? (int) $quote['period_min'] : null,
+                    deliveryDaysMax: isset($quote['period_max']) ? (int) $quote['period_max'] : null,
+                );
+            }, $response->json('tariff_codes'));
+        } catch (ConnectionException $exception) {
+            $this->failedApiLogger->log('calculate_rates', 'POST', $url, $payload, $exception);
+
+            throw new CarrierRequestException('CDEK rate calculation connection failed.', previous: $exception);
+        }
+    }
+
     public function validateAddress(ShipmentData $shipment): AddressValidationResultData
     {
         $errors = [];

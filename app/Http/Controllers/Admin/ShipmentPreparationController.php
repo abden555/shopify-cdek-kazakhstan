@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domains\Carriers\DTOs\RateRequestData;
+use App\Domains\Carriers\Exceptions\CarrierRequestException;
+use App\Domains\Carriers\Services\CdekCarrier;
 use App\Domains\Carriers\Services\CdekSettingsService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\PrepareShipmentRequest;
@@ -64,6 +67,47 @@ final class ShipmentPreparationController extends Controller
         $shipment->save();
 
         return to_route('admin.orders.shipments.prepare', $order)->with('status', 'Shipment draft saved. Review it before creating a CDEK shipment.');
+    }
+
+    public function rates(Order $order, CdekSettingsService $settings, CdekCarrier $carrier): RedirectResponse
+    {
+        $draft = $this->draft($order);
+        $configuration = $settings->configuration();
+
+        if ($draft === null || blank($configuration->senderCity)) {
+            return to_route('admin.orders.shipments.prepare', $order)->with('error', 'Save a shipment draft and configure the CDEK sender city before calculating rates.');
+        }
+
+        $parcel = $draft->metadata['parcel'] ?? [];
+        $destination = $draft->destination_address ?? [];
+
+        try {
+            $quotes = $carrier->calculateRates(new RateRequestData(
+                origin: ['city' => $configuration->senderCity],
+                destination: ['city' => $destination['city'] ?? null, 'country_code' => $destination['country_code'] ?? null],
+                parcels: [[
+                    'weight' => $parcel['weight_grams'] ?? null,
+                    'length' => $parcel['length_cm'] ?? null,
+                    'width' => $parcel['width_cm'] ?? null,
+                    'height' => $parcel['height_cm'] ?? null,
+                ]],
+            ));
+        } catch (CarrierRequestException) {
+            return to_route('admin.orders.shipments.prepare', $order)->with('error', 'CDEK did not return rates. Check the sender profile, recipient address, and Failed API Logs.');
+        }
+
+        $metadata = $draft->metadata ?? [];
+        $metadata['rate_quotes'] = array_map(static fn ($quote): array => [
+            'service_code' => $quote->serviceCode,
+            'service_name' => $quote->serviceName,
+            'amount_minor' => $quote->amountMinor,
+            'currency' => $quote->currency,
+            'delivery_days_min' => $quote->deliveryDaysMin,
+            'delivery_days_max' => $quote->deliveryDaysMax,
+        ], $quotes);
+        $draft->update(['metadata' => $metadata]);
+
+        return to_route('admin.orders.shipments.prepare', $order)->with('status', count($quotes).' CDEK rate option(s) retrieved. Select one and save the draft.');
     }
 
     private function draft(Order $order): ?Shipment
