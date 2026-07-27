@@ -4,8 +4,21 @@
             <h2 class="h3 mb-1">Welcome to Shopify CDEK Kazakhstan</h2>
             <p class="text-body-secondary mb-0">Your operational overview will appear here as integrations are configured.</p>
         </div>
-        <span class="badge rounded-pill text-bg-light border px-3 py-2"><i class="bi bi-circle-fill text-success me-2 small"></i>Application online</span>
+        <div class="d-flex align-items-center gap-2">
+            <form method="POST" action="{{ route('admin.orders.sync') }}">
+                @csrf
+                <button class="btn btn-primary btn-sm" type="submit"><i class="bi bi-arrow-repeat me-1"></i>Sync Shopify orders</button>
+            </form>
+            <span class="badge rounded-pill text-bg-light border px-3 py-2"><i class="bi bi-circle-fill text-success me-2 small"></i>Application online</span>
+        </div>
     </div>
+
+    @if (session('status'))
+        <div class="alert alert-success" role="alert">{{ session('status') }}</div>
+    @endif
+    @if (session('error'))
+        <div class="alert alert-danger" role="alert">{{ session('error') }}</div>
+    @endif
 
     <div class="row g-4 mb-4">
         <div class="col-sm-6 col-xxl-3">

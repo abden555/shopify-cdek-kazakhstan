@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\CdekSettingsController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\ShopifyOrderSyncController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Shopify\ShopifyOAuthController;
 use App\Http\Controllers\Shopify\ShopifyWebhookController;
@@ -26,6 +27,7 @@ Route::prefix('shopify')->as('shopify.')->group(function (): void {
 
 Route::middleware(['auth', 'role:administrator'])->prefix('admin')->as('admin.')->group(function (): void {
     Route::get('/', DashboardController::class)->name('dashboard');
+    Route::post('/orders/sync', ShopifyOrderSyncController::class)->name('orders.sync');
     Route::get('/settings/cdek', [CdekSettingsController::class, 'edit'])->name('settings.cdek.edit');
     Route::put('/settings/cdek', [CdekSettingsController::class, 'update'])->name('settings.cdek.update');
     Route::post('/settings/cdek/test', [CdekSettingsController::class, 'test'])->name('settings.cdek.test');
