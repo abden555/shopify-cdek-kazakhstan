@@ -10,6 +10,10 @@
         <div class="alert alert-success" role="alert">{{ session('status') }}</div>
     @endif
 
+    @if (session('error'))
+        <div class="alert alert-danger" role="alert">{{ session('error') }}</div>
+    @endif
+
     <form method="POST" action="{{ route('admin.settings.cdek.update') }}" class="card shadow-sm border-0">
         @csrf
         @method('PUT')
@@ -60,5 +64,11 @@
             </div>
         </div>
         <div class="card-footer bg-white border-0 p-4 pt-0"><button class="btn btn-primary" type="submit">Save CDEK settings</button></div>
+    </form>
+
+    <form method="POST" action="{{ route('admin.settings.cdek.test') }}" class="mt-3">
+        @csrf
+        <button class="btn btn-outline-primary" type="submit">Test CDEK connection</button>
+        <span class="form-text ms-2">Sends an authentication request only; it does not create a shipment.</span>
     </form>
 </x-admin.layout>

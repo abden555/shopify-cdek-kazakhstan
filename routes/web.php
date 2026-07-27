@@ -28,4 +28,5 @@ Route::middleware(['auth', 'role:administrator'])->prefix('admin')->as('admin.')
     Route::get('/', DashboardController::class)->name('dashboard');
     Route::get('/settings/cdek', [CdekSettingsController::class, 'edit'])->name('settings.cdek.edit');
     Route::put('/settings/cdek', [CdekSettingsController::class, 'update'])->name('settings.cdek.update');
+    Route::post('/settings/cdek/test', [CdekSettingsController::class, 'test'])->name('settings.cdek.test');
 });
