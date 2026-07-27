@@ -9,9 +9,9 @@
         <p class="brand-caption">Shopify CDEK Kazakhstan</p>
 
         <nav class="nav flex-column sidebar-nav" aria-label="Primary navigation">
-            <a class="nav-link active" href="{{ route('admin.dashboard') }}"><i class="bi bi-grid-1x2-fill"></i>Dashboard</a>
+            <a class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}"><i class="bi bi-grid-1x2-fill"></i>Dashboard</a>
             <span class="sidebar-label">Operations</span>
-            <a class="nav-link disabled" href="#" aria-disabled="true"><i class="bi bi-bag"></i>Orders <span class="badge text-bg-secondary ms-auto">Soon</span></a>
+            <a class="nav-link {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}" href="{{ route('admin.orders.index') }}"><i class="bi bi-bag"></i>Orders</a>
             <a class="nav-link disabled" href="#" aria-disabled="true"><i class="bi bi-truck"></i>Shipments <span class="badge text-bg-secondary ms-auto">Soon</span></a>
             <span class="sidebar-label">Configuration</span>
             <a class="nav-link disabled" href="#" aria-disabled="true"><i class="bi bi-plug"></i>Integrations <span class="badge text-bg-secondary ms-auto">Soon</span></a>
