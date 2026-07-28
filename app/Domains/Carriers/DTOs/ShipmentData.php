@@ -10,5 +10,6 @@ final readonly class ShipmentData
         public array $sender,
         public array $recipient,
         public array $items = [],
+        public ?int $serviceCode = null,
     ) {}
 }

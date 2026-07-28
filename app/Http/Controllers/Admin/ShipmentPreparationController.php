@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domains\Carriers\Actions\CreateShipmentAction;
 use App\Domains\Carriers\DTOs\RateRequestData;
+use App\Domains\Carriers\DTOs\ShipmentData;
 use App\Domains\Carriers\Exceptions\CarrierRequestException;
 use App\Domains\Carriers\Services\CdekCarrier;
 use App\Domains\Carriers\Services\CdekSettingsService;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\CreateCdekShipmentRequest;
 use App\Http\Requests\Admin\PrepareShipmentRequest;
 use App\Models\Order;
 use App\Models\Shipment;
@@ -18,7 +21,7 @@ final class ShipmentPreparationController extends Controller
     public function create(Order $order, CdekSettingsService $settings): View
     {
         $order->loadMissing('shop');
-        $draft = $this->draft($order);
+        $draft = $this->shipment($order);
         $address = $order->shipping_address ?? [];
         $configuration = $settings->configuration();
 
@@ -111,8 +114,79 @@ final class ShipmentPreparationController extends Controller
         return to_route('admin.orders.shipments.prepare', $order)->with('status', count($quotes).' CDEK rate option(s) retrieved. Select one and save the draft.');
     }
 
+    public function submit(CreateCdekShipmentRequest $request, Order $order, CdekSettingsService $settings, CreateShipmentAction $createShipment): RedirectResponse
+    {
+        $order->loadMissing('items');
+        $shipment = $this->draft($order);
+        $configuration = $settings->configuration();
+
+        if ($shipment === null || blank($shipment->service_code) || blank($configuration->senderLocationCode) || blank($configuration->senderCompany) || blank($configuration->senderPhone)) {
+            return to_route('admin.orders.shipments.prepare', $order)->with('error', 'Save a complete draft, select a tariff, and configure the CDEK sender profile before creating a shipment.');
+        }
+
+        $parcel = $shipment->metadata['parcel'] ?? [];
+        $destination = $shipment->destination_address ?? [];
+
+        if (blank($destination['location_code'] ?? null)) {
+            return to_route('admin.orders.shipments.prepare', $order)->with('error', 'The recipient CDEK location code is required before creating a shipment.');
+        }
+
+        $totalQuantity = max(1, (int) $order->items->sum('quantity'));
+        $weightPerItem = max(1, (int) floor(((int) $parcel['weight_grams']) / $totalQuantity));
+        $packageItems = $order->items->map(static fn ($item): array => [
+            'name' => $item->title,
+            'ware_key' => $item->sku ?: $item->id,
+            'amount' => (int) $item->quantity,
+            'cost' => (float) $item->unit_price,
+            'weight' => $weightPerItem,
+        ])->all();
+
+        try {
+            $result = $createShipment->handle('cdek', new ShipmentData(
+                reference: 'CDEK-'.$shipment->id,
+                sender: [
+                    'name' => $configuration->senderCompany,
+                    'phone' => $configuration->senderPhone,
+                    'location_code' => $configuration->senderLocationCode,
+                ],
+                recipient: [
+                    'name' => $shipment->recipient['name'] ?? null,
+                    'phone' => $shipment->recipient['phone'] ?? null,
+                    'location_code' => $destination['location_code'],
+                ],
+                items: [[
+                    'number' => '1',
+                    'weight' => (int) $parcel['weight_grams'],
+                    'length' => (int) $parcel['length_cm'],
+                    'width' => (int) $parcel['width_cm'],
+                    'height' => (int) $parcel['height_cm'],
+                    'items' => $packageItems,
+                ]],
+                serviceCode: (int) $shipment->service_code,
+            ));
+        } catch (CarrierRequestException) {
+            return to_route('admin.orders.shipments.prepare', $order)->with('error', 'CDEK could not create the shipment. No local shipment status was changed. Review Failed API Logs before retrying.');
+        }
+
+        $metadata = $shipment->metadata ?? [];
+        $metadata['cdek_reference'] = 'CDEK-'.$shipment->id;
+        $shipment->update([
+            'external_id' => $result->carrierShipmentId,
+            'tracking_number' => $result->trackingNumber,
+            'status' => 'created',
+            'metadata' => $metadata,
+        ]);
+
+        return to_route('admin.orders.shipments.prepare', $order)->with('status', 'CDEK shipment created successfully.'.($result->trackingNumber ? ' Tracking number: '.$result->trackingNumber.'.' : ''));
+    }
+
     private function draft(Order $order): ?Shipment
     {
         return $order->shipments()->where('provider', 'cdek')->where('status', 'draft')->latest()->first();
+    }
+
+    private function shipment(Order $order): ?Shipment
+    {
+        return $order->shipments()->where('provider', 'cdek')->latest()->first();
     }
 }

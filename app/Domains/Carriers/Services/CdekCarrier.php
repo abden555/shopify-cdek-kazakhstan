@@ -64,7 +64,44 @@ final class CdekCarrier implements CarrierInterface
 
     public function createShipment(ShipmentData $shipment): ShipmentResultData
     {
-        throw new CarrierOperationNotImplementedException('CDEK shipment creation is not implemented.');
+        if ($shipment->serviceCode === null) {
+            throw new CarrierRequestException('A CDEK tariff code is required to create a shipment.');
+        }
+
+        $url = $this->url('/orders');
+        $payload = [
+            'type' => 1,
+            'number' => $shipment->reference,
+            'tariff_code' => $shipment->serviceCode,
+            'from_location' => ['code' => $shipment->sender['location_code'] ?? null],
+            'to_location' => ['code' => $shipment->recipient['location_code'] ?? null],
+            'sender' => [
+                'name' => $shipment->sender['name'] ?? null,
+                'phones' => [['number' => $shipment->sender['phone'] ?? null]],
+            ],
+            'recipient' => [
+                'name' => $shipment->recipient['name'] ?? null,
+                'phones' => [['number' => $shipment->recipient['phone'] ?? null]],
+            ],
+            'packages' => $shipment->items,
+        ];
+
+        try {
+            $response = $this->authenticatedClient()->post($url, $payload);
+
+            if ($response->failed() || ! is_string($response->json('entity.uuid'))) {
+                $this->throwRequestException('create_shipment', 'POST', $url, $payload, $response);
+            }
+
+            return new ShipmentResultData(
+                carrierShipmentId: (string) $response->json('entity.uuid'),
+                trackingNumber: is_string($response->json('entity.cdek_number')) ? $response->json('entity.cdek_number') : null,
+            );
+        } catch (ConnectionException $exception) {
+            $this->failedApiLogger->log('create_shipment', 'POST', $url, $payload, $exception);
+
+            throw new CarrierRequestException('CDEK shipment creation connection failed.', previous: $exception);
+        }
     }
 
     public function cancelShipment(string $carrierShipmentId): void

@@ -62,5 +62,25 @@
             <button class="btn btn-outline-primary" type="submit"><i class="bi bi-calculator me-1"></i>Calculate CDEK rates</button>
             <span class="form-text ms-2">This requests quotes only; it does not create a CDEK shipment.</span>
         </form>
+
+        <section class="card border-0 shadow-sm mt-4">
+            <div class="card-body p-4">
+                <h3 class="h5">Create CDEK shipment</h3>
+                @if ($draft->status === 'created')
+                    <p class="mb-0 text-success">Created in CDEK. {{ $draft->tracking_number ? 'Tracking number: '.$draft->tracking_number : 'CDEK reference: '.$draft->external_id }}</p>
+                @else
+                    <p class="text-body-secondary">This sends the selected tariff and draft details to CDEK. Verify every value before continuing.</p>
+                    <form method="POST" action="{{ route('admin.orders.shipments.submit', $order) }}">
+                        @csrf
+                        <div class="form-check mb-3">
+                            <input class="form-check-input @error('confirm_create') is-invalid @enderror" type="checkbox" value="1" id="confirm_create" name="confirm_create">
+                            <label class="form-check-label" for="confirm_create">I confirm that the recipient, tariff, parcel, and sender details are correct.</label>
+                            @error('confirm_create')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        <button class="btn btn-success" type="submit"><i class="bi bi-send-check me-1"></i>Create CDEK shipment</button>
+                    </form>
+                @endif
+            </div>
+        </section>
     @endif
 </x-admin.layout>

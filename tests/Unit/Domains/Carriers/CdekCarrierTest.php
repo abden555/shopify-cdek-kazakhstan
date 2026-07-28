@@ -55,4 +55,36 @@ class CdekCarrierTest extends TestCase
         $this->assertFalse($result->isValid);
         $this->assertSame(['Recipient city is required.'], $result->errors);
     }
+
+    public function test_it_creates_a_cdek_shipment(): void
+    {
+        config()->set('carriers.cdek.client_id', 'test-client');
+        config()->set('carriers.cdek.client_secret', 'test-secret');
+        Cache::flush();
+
+        Http::fake([
+            'https://api.edu.cdek.ru/v2/oauth/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ]),
+            'https://api.edu.cdek.ru/v2/orders' => Http::response([
+                'entity' => ['uuid' => 'cdek-order-uuid', 'cdek_number' => '123456789'],
+            ], 202),
+        ]);
+
+        $result = app(CarrierInterface::class)->createShipment(new ShipmentData(
+            reference: 'CDEK-order-uuid',
+            sender: ['name' => 'Sender', 'phone' => '+77000000000', 'location_code' => '4756'],
+            recipient: ['name' => 'Recipient', 'phone' => '+77000000001', 'location_code' => '4757'],
+            items: [['number' => '1', 'weight' => 100, 'length' => 10, 'width' => 10, 'height' => 10, 'items' => []]],
+            serviceCode: 136,
+        ));
+
+        $this->assertSame('cdek-order-uuid', $result->carrierShipmentId);
+        $this->assertSame('123456789', $result->trackingNumber);
+        Http::assertSent(static fn ($request): bool => $request->url() === 'https://api.edu.cdek.ru/v2/orders'
+            && $request['tariff_code'] === 136
+            && $request['from_location']['code'] === '4756'
+            && $request['to_location']['code'] === '4757');
+    }
 }
