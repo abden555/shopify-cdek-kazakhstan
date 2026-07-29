@@ -19,6 +19,7 @@ final class PrepareShipmentRequest extends FormRequest
             'recipient_country_code' => ['required', 'string', 'size:2'],
             'recipient_city' => ['required', 'string', 'max:255'],
             'recipient_location_code' => ['required', 'string', 'max:50'],
+            'recipient_delivery_point_code' => ['nullable', 'string', 'max:50'],
             'recipient_address' => ['required', 'string', 'max:1000'],
             'tariff_code' => ['nullable', 'integer', 'min:1'],
             'weight_grams' => ['required', 'integer', 'min:1', 'max:300000'],

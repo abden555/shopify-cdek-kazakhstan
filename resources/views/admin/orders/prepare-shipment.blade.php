@@ -25,6 +25,7 @@
                         <div class="col-md-6"><label class="form-label">Country code</label><input name="recipient_country_code" class="form-control @error('recipient_country_code') is-invalid @enderror" value="{{ old('recipient_country_code', $draft?->destination_address['country_code'] ?? ($address['countryCodeV2'] ?? 'KZ')) }}">@error('recipient_country_code')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
                         <div class="col-12"><label class="form-label">City</label><input name="recipient_city" class="form-control @error('recipient_city') is-invalid @enderror" value="{{ old('recipient_city', $draft?->destination_address['city'] ?? ($address['city'] ?? '')) }}">@error('recipient_city')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
                         <div class="col-12"><label class="form-label">CDEK recipient location code</label><input name="recipient_location_code" class="form-control @error('recipient_location_code') is-invalid @enderror" value="{{ old('recipient_location_code', $draft?->destination_address['location_code'] ?? '') }}">@error('recipient_location_code')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
+                        <div class="col-12"><label class="form-label">CDEK recipient pickup-point code <span class="text-body-secondary">(required for pickup-point tariffs)</span></label><input name="recipient_delivery_point_code" class="form-control @error('recipient_delivery_point_code') is-invalid @enderror" value="{{ old('recipient_delivery_point_code', $draft?->destination_address['delivery_point_code'] ?? '') }}">@error('recipient_delivery_point_code')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
                         <div class="col-12"><label class="form-label">Address</label><input name="recipient_address" class="form-control @error('recipient_address') is-invalid @enderror" value="{{ old('recipient_address', $draft?->destination_address['address'] ?? trim(($address['address1'] ?? '').' '.($address['address2'] ?? ''))) }}">@error('recipient_address')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
                     </div>
                 </section>
@@ -74,6 +75,11 @@
                             <form method="POST" action="{{ route('admin.orders.shipments.label.request', $order) }}">@csrf<button class="btn btn-outline-secondary" type="submit"><i class="bi bi-file-earmark-pdf me-1"></i>Generate label</button></form>
                         @else
                             <a class="btn btn-outline-secondary" href="{{ route('admin.orders.shipments.label.download', $order) }}"><i class="bi bi-download me-1"></i>Download label</a>
+                            <form method="POST" action="{{ route('admin.orders.shipments.label.request', $order) }}" onsubmit="return confirm('Request a new CDEK label? Use this only if the existing label request is invalid.');">
+                                @csrf
+                                <input type="hidden" name="regenerate" value="1">
+                                <button class="btn btn-outline-warning" type="submit"><i class="bi bi-arrow-clockwise me-1"></i>Regenerate label</button>
+                            </form>
                         @endif
                         @if ($draft->status !== 'cancelled')
                             <form method="POST" action="{{ route('admin.orders.shipments.cancel', $order) }}" onsubmit="return confirm('Request CDEK to cancel this shipment?');">

@@ -91,6 +91,10 @@ final class CdekCarrier implements CarrierInterface
             'packages' => $shipment->items,
         ];
 
+        if (filled($shipment->recipient['delivery_point_code'] ?? null)) {
+            $payload['delivery_point'] = $shipment->recipient['delivery_point_code'];
+        }
+
         try {
             $response = $this->authenticatedClient()->post($url, $payload);
 
@@ -176,8 +180,12 @@ final class CdekCarrier implements CarrierInterface
 
         try {
             $response = $this->authenticatedClient()->post($url, $payload);
+            $requests = $response->json('requests', []);
+            $hasInvalidRequest = is_array($requests) && collect($requests)->contains(
+                static fn (mixed $request): bool => is_array($request) && ($request['state'] ?? null) === 'INVALID',
+            );
 
-            if ($response->failed() || ! is_string($response->json('entity.uuid'))) {
+            if ($response->failed() || ! is_string($response->json('entity.uuid')) || $hasInvalidRequest) {
                 $this->throwRequestException('request_label', 'POST', $url, $payload, $response);
             }
 

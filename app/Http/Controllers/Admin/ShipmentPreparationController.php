@@ -23,6 +23,7 @@ use App\Models\Tracking;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -66,6 +67,7 @@ final class ShipmentPreparationController extends Controller
                 'country_code' => strtoupper($data['recipient_country_code']),
                 'city' => $data['recipient_city'],
                 'location_code' => $data['recipient_location_code'],
+                'delivery_point_code' => $data['recipient_delivery_point_code'] ?? null,
                 'address' => $data['recipient_address'],
             ],
             'metadata' => [
@@ -166,6 +168,7 @@ final class ShipmentPreparationController extends Controller
                     'phone' => $shipment->recipient['phone'] ?? null,
                     'location_code' => $destination['location_code'],
                     'address' => $destination['address'] ?? null,
+                    'delivery_point_code' => $destination['delivery_point_code'] ?? null,
                 ],
                 items: [[
                     'number' => '1',
@@ -223,7 +226,10 @@ final class ShipmentPreparationController extends Controller
             );
         }
 
-        $shipment->update(['tracking_number' => $tracking->trackingNumber]);
+        $status = collect($tracking->events)->contains(static fn (array $event): bool => ($event['code'] ?? null) === 'INVALID')
+            ? 'invalid'
+            : $shipment->status;
+        $shipment->update(['tracking_number' => $tracking->trackingNumber, 'status' => $status]);
 
         return to_route('admin.orders.shipments.prepare', $order)->with('status', count($tracking->events).' CDEK tracking event(s) refreshed.');
     }
@@ -247,7 +253,7 @@ final class ShipmentPreparationController extends Controller
         return to_route('admin.orders.shipments.prepare', $order)->with('status', 'CDEK shipment cancellation was submitted. Refresh tracking to confirm its final status.');
     }
 
-    public function requestLabel(Order $order, RequestLabelAction $requestLabel): RedirectResponse
+    public function requestLabel(Request $request, Order $order, RequestLabelAction $requestLabel): RedirectResponse
     {
         $shipment = $this->shipment($order);
 
@@ -257,11 +263,12 @@ final class ShipmentPreparationController extends Controller
 
         $metadata = $shipment->metadata ?? [];
 
-        if (filled($metadata['cdek_print_request_uuid'] ?? null)) {
+        if (filled($metadata['cdek_print_request_uuid'] ?? null) && ! $request->boolean('regenerate')) {
             return to_route('admin.orders.shipments.prepare', $order)->with('status', 'The CDEK label is already being prepared. Download it when ready.');
         }
 
         try {
+            unset($metadata['cdek_print_request_uuid']);
             $metadata['cdek_print_request_uuid'] = $requestLabel->handle('cdek', $shipment->external_id);
         } catch (CarrierRequestException) {
             return to_route('admin.orders.shipments.prepare', $order)->with('error', 'CDEK could not start label generation. Review Failed API Logs.');
