@@ -70,6 +70,11 @@
                     <p class="text-success">Created in CDEK. {{ $draft->tracking_number ? 'Tracking number: '.$draft->tracking_number : 'CDEK reference: '.$draft->external_id }}</p>
                     <div class="d-flex flex-wrap gap-2">
                         <form method="POST" action="{{ route('admin.orders.shipments.track', $order) }}">@csrf<button class="btn btn-outline-primary" type="submit"><i class="bi bi-arrow-repeat me-1"></i>Refresh tracking</button></form>
+                        @if (empty($draft->metadata['cdek_print_request_uuid']))
+                            <form method="POST" action="{{ route('admin.orders.shipments.label.request', $order) }}">@csrf<button class="btn btn-outline-secondary" type="submit"><i class="bi bi-file-earmark-pdf me-1"></i>Generate label</button></form>
+                        @else
+                            <a class="btn btn-outline-secondary" href="{{ route('admin.orders.shipments.label.download', $order) }}"><i class="bi bi-download me-1"></i>Download label</a>
+                        @endif
                         @if ($draft->status !== 'cancelled')
                             <form method="POST" action="{{ route('admin.orders.shipments.cancel', $order) }}" onsubmit="return confirm('Request CDEK to cancel this shipment?');">
                                 @csrf

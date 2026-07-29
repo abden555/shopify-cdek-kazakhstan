@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Domains\Carriers\Actions\CancelShipmentAction;
 use App\Domains\Carriers\Actions\CreateShipmentAction;
+use App\Domains\Carriers\Actions\DownloadLabelAction;
+use App\Domains\Carriers\Actions\RequestLabelAction;
 use App\Domains\Carriers\Actions\TrackShipmentAction;
 use App\Domains\Carriers\DTOs\RateRequestData;
 use App\Domains\Carriers\DTOs\ShipmentData;
@@ -14,12 +16,15 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\CancelCdekShipmentRequest;
 use App\Http\Requests\Admin\CreateCdekShipmentRequest;
 use App\Http\Requests\Admin\PrepareShipmentRequest;
+use App\Models\Label;
 use App\Models\Order;
 use App\Models\Shipment;
 use App\Models\Tracking;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class ShipmentPreparationController extends Controller
 {
@@ -240,6 +245,73 @@ final class ShipmentPreparationController extends Controller
         $shipment->update(['status' => 'cancelled']);
 
         return to_route('admin.orders.shipments.prepare', $order)->with('status', 'CDEK shipment cancellation was submitted. Refresh tracking to confirm its final status.');
+    }
+
+    public function requestLabel(Order $order, RequestLabelAction $requestLabel): RedirectResponse
+    {
+        $shipment = $this->shipment($order);
+
+        if ($shipment === null || blank($shipment->external_id) || $shipment->status === 'cancelled') {
+            return to_route('admin.orders.shipments.prepare', $order)->with('error', 'Only an active CDEK shipment can have a label generated.');
+        }
+
+        $metadata = $shipment->metadata ?? [];
+
+        if (filled($metadata['cdek_print_request_uuid'] ?? null)) {
+            return to_route('admin.orders.shipments.prepare', $order)->with('status', 'The CDEK label is already being prepared. Download it when ready.');
+        }
+
+        try {
+            $metadata['cdek_print_request_uuid'] = $requestLabel->handle('cdek', $shipment->external_id);
+        } catch (CarrierRequestException) {
+            return to_route('admin.orders.shipments.prepare', $order)->with('error', 'CDEK could not start label generation. Review Failed API Logs.');
+        }
+
+        $shipment->update(['metadata' => $metadata]);
+
+        return to_route('admin.orders.shipments.prepare', $order)->with('status', 'CDEK label generation requested. Wait a moment, then download the label.');
+    }
+
+    public function downloadLabel(Order $order, DownloadLabelAction $downloadLabel): StreamedResponse|RedirectResponse
+    {
+        $shipment = $this->shipment($order);
+
+        if ($shipment === null) {
+            return to_route('admin.orders.index')->with('error', 'Shipment not found.');
+        }
+
+        $label = $shipment->labels()->latest('generated_at')->first();
+
+        if ($label !== null && Storage::disk($label->disk)->exists($label->path)) {
+            return Storage::disk($label->disk)->download($label->path, 'cdek-label-'.$shipment->tracking_number.'.pdf', ['Content-Type' => 'application/pdf']);
+        }
+
+        $printRequestId = $shipment->metadata['cdek_print_request_uuid'] ?? null;
+
+        if (blank($printRequestId)) {
+            return to_route('admin.orders.shipments.prepare', $order)->with('error', 'Request CDEK label generation before downloading it.');
+        }
+
+        try {
+            $labelData = $downloadLabel->handle('cdek', $printRequestId);
+        } catch (CarrierRequestException $exception) {
+            return to_route('admin.orders.shipments.prepare', $order)->with('error', $exception->getMessage());
+        }
+
+        $path = 'labels/cdek/'.$shipment->id.'/'.$printRequestId.'.pdf';
+        Storage::disk('local')->put($path, $labelData->content);
+        Label::query()->updateOrCreate(
+            ['shipment_id' => $shipment->id, 'path' => $path],
+            [
+                'format' => 'pdf',
+                'disk' => 'local',
+                'checksum' => hash('sha256', $labelData->content),
+                'size_bytes' => strlen($labelData->content),
+                'generated_at' => now(),
+            ],
+        );
+
+        return Storage::disk('local')->download($path, $labelData->fileName ?: 'cdek-label-'.$shipment->id.'.pdf', ['Content-Type' => $labelData->mimeType]);
     }
 
     private function draft(Order $order): ?Shipment

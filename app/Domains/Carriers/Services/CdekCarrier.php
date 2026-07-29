@@ -12,7 +12,6 @@ use App\Domains\Carriers\DTOs\RateRequestData;
 use App\Domains\Carriers\DTOs\ShipmentData;
 use App\Domains\Carriers\DTOs\ShipmentResultData;
 use App\Domains\Carriers\DTOs\TrackingData;
-use App\Domains\Carriers\Exceptions\CarrierOperationNotImplementedException;
 use App\Domains\Carriers\Exceptions\CarrierRequestException;
 use DateTimeImmutable;
 use Illuminate\Http\Client\ConnectionException;
@@ -129,7 +128,65 @@ final class CdekCarrier implements CarrierInterface
 
     public function downloadLabel(string $carrierShipmentId): LabelData
     {
-        throw new CarrierOperationNotImplementedException('CDEK label download is not implemented.');
+        $statusUrl = $this->url('/print/orders/'.$carrierShipmentId);
+
+        try {
+            $statusResponse = $this->authenticatedClient()->get($statusUrl);
+
+            if ($statusResponse->failed() || ! is_array($statusResponse->json('entity'))) {
+                $this->throwRequestException('label_status', 'GET', $statusUrl, [], $statusResponse);
+            }
+
+            /** @var array<string, mixed> $entity */
+            $entity = $statusResponse->json('entity');
+            $statuses = $entity['statuses'] ?? [];
+            $lastStatus = is_array($statuses) ? end($statuses) : null;
+
+            if (! is_array($lastStatus) || ($lastStatus['code'] ?? null) !== 'READY') {
+                throw new CarrierRequestException('CDEK label is still being generated. Try downloading it again shortly.');
+            }
+
+            $url = $this->url('/print/orders/'.$carrierShipmentId.'.pdf');
+            $response = $this->authenticatedClient()->get($url);
+
+            if ($response->failed() || $response->body() === '') {
+                $this->throwRequestException('download_label', 'GET', $url, [], $response);
+            }
+
+            return new LabelData(
+                content: $response->body(),
+                mimeType: $response->header('Content-Type') ?: 'application/pdf',
+                fileName: 'cdek-label-'.$carrierShipmentId.'.pdf',
+            );
+        } catch (ConnectionException $exception) {
+            $this->failedApiLogger->log('download_label', 'GET', $statusUrl, [], $exception);
+
+            throw new CarrierRequestException('CDEK label download connection failed.', previous: $exception);
+        }
+    }
+
+    public function requestLabel(string $carrierShipmentId): string
+    {
+        $url = $this->url('/print/orders');
+        $payload = [
+            'orders' => [['order_uuid' => $carrierShipmentId]],
+            'copy_count' => 1,
+            'type' => 'tpl_russia',
+        ];
+
+        try {
+            $response = $this->authenticatedClient()->post($url, $payload);
+
+            if ($response->failed() || ! is_string($response->json('entity.uuid'))) {
+                $this->throwRequestException('request_label', 'POST', $url, $payload, $response);
+            }
+
+            return (string) $response->json('entity.uuid');
+        } catch (ConnectionException $exception) {
+            $this->failedApiLogger->log('request_label', 'POST', $url, $payload, $exception);
+
+            throw new CarrierRequestException('CDEK label request connection failed.', previous: $exception);
+        }
     }
 
     public function trackShipment(string $trackingNumber): TrackingData

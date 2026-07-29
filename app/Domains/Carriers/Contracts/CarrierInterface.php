@@ -22,6 +22,8 @@ interface CarrierInterface
 
     public function cancelShipment(string $carrierShipmentId): void;
 
+    public function requestLabel(string $carrierShipmentId): string;
+
     public function downloadLabel(string $carrierShipmentId): LabelData;
 
     public function trackShipment(string $trackingNumber): TrackingData;

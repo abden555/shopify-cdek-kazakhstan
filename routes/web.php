@@ -37,6 +37,8 @@ Route::middleware(['auth', 'role:administrator'])->prefix('admin')->as('admin.')
     Route::post('/orders/{order}/shipment/submit', [ShipmentPreparationController::class, 'submit'])->name('orders.shipments.submit');
     Route::post('/orders/{order}/shipment/tracking', [ShipmentPreparationController::class, 'track'])->name('orders.shipments.track');
     Route::post('/orders/{order}/shipment/cancel', [ShipmentPreparationController::class, 'cancel'])->name('orders.shipments.cancel');
+    Route::post('/orders/{order}/shipment/label', [ShipmentPreparationController::class, 'requestLabel'])->name('orders.shipments.label.request');
+    Route::get('/orders/{order}/shipment/label', [ShipmentPreparationController::class, 'downloadLabel'])->name('orders.shipments.label.download');
     Route::get('/settings/cdek', [CdekSettingsController::class, 'edit'])->name('settings.cdek.edit');
     Route::put('/settings/cdek', [CdekSettingsController::class, 'update'])->name('settings.cdek.update');
     Route::post('/settings/cdek/test', [CdekSettingsController::class, 'test'])->name('settings.cdek.test');
