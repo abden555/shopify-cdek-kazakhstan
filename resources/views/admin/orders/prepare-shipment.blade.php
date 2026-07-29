@@ -66,8 +66,18 @@
         <section class="card border-0 shadow-sm mt-4">
             <div class="card-body p-4">
                 <h3 class="h5">Create CDEK shipment</h3>
-                @if ($draft->status === 'created')
-                    <p class="mb-0 text-success">Created in CDEK. {{ $draft->tracking_number ? 'Tracking number: '.$draft->tracking_number : 'CDEK reference: '.$draft->external_id }}</p>
+                @if (in_array($draft->status, ['created', 'cancelled'], true))
+                    <p class="text-success">Created in CDEK. {{ $draft->tracking_number ? 'Tracking number: '.$draft->tracking_number : 'CDEK reference: '.$draft->external_id }}</p>
+                    <div class="d-flex flex-wrap gap-2">
+                        <form method="POST" action="{{ route('admin.orders.shipments.track', $order) }}">@csrf<button class="btn btn-outline-primary" type="submit"><i class="bi bi-arrow-repeat me-1"></i>Refresh tracking</button></form>
+                        @if ($draft->status !== 'cancelled')
+                            <form method="POST" action="{{ route('admin.orders.shipments.cancel', $order) }}" onsubmit="return confirm('Request CDEK to cancel this shipment?');">
+                                @csrf
+                                <input type="hidden" name="confirm_cancel" value="1">
+                                <button class="btn btn-outline-danger" type="submit"><i class="bi bi-x-circle me-1"></i>Cancel shipment</button>
+                            </form>
+                        @endif
+                    </div>
                 @else
                     <p class="text-body-secondary">This sends the selected tariff and draft details to CDEK. Verify every value before continuing.</p>
                     <form method="POST" action="{{ route('admin.orders.shipments.submit', $order) }}">

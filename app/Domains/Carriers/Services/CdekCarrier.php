@@ -112,7 +112,19 @@ final class CdekCarrier implements CarrierInterface
 
     public function cancelShipment(string $carrierShipmentId): void
     {
-        throw new CarrierOperationNotImplementedException('CDEK shipment cancellation is not implemented.');
+        $url = $this->url('/orders/'.$carrierShipmentId);
+
+        try {
+            $response = $this->authenticatedClient()->delete($url);
+
+            if ($response->failed()) {
+                $this->throwRequestException('cancel_shipment', 'DELETE', $url, [], $response);
+            }
+        } catch (ConnectionException $exception) {
+            $this->failedApiLogger->log('cancel_shipment', 'DELETE', $url, [], $exception);
+
+            throw new CarrierRequestException('CDEK shipment cancellation connection failed.', previous: $exception);
+        }
     }
 
     public function downloadLabel(string $carrierShipmentId): LabelData
@@ -122,7 +134,28 @@ final class CdekCarrier implements CarrierInterface
 
     public function trackShipment(string $trackingNumber): TrackingData
     {
-        throw new CarrierOperationNotImplementedException('CDEK tracking is not implemented.');
+        $url = $this->url('/orders/'.$trackingNumber);
+
+        try {
+            $response = $this->authenticatedClient()->get($url);
+
+            if ($response->failed() || ! is_array($response->json('entity'))) {
+                $this->throwRequestException('track_shipment', 'GET', $url, [], $response);
+            }
+
+            /** @var array<string, mixed> $entity */
+            $entity = $response->json('entity');
+            $statuses = $entity['statuses'] ?? [];
+
+            return new TrackingData(
+                trackingNumber: (string) ($entity['cdek_number'] ?? $trackingNumber),
+                events: is_array($statuses) ? array_values(array_filter($statuses, 'is_array')) : [],
+            );
+        } catch (ConnectionException $exception) {
+            $this->failedApiLogger->log('track_shipment', 'GET', $url, [], $exception);
+
+            throw new CarrierRequestException('CDEK tracking connection failed.', previous: $exception);
+        }
     }
 
     public function calculateRate(RateRequestData $rateRequest): RateQuoteData
