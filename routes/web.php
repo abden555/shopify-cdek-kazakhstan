@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\ShipmentPreparationController;
 use App\Http\Controllers\Admin\ShopifyOrderSyncController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Cdek\CdekWebhookController;
 use App\Http\Controllers\Shopify\ShopifyOAuthController;
 use App\Http\Controllers\Shopify\ShopifyWebhookController;
 use Illuminate\Support\Facades\Route;
@@ -18,6 +19,8 @@ Route::middleware('guest')->group(function (): void {
 });
 
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->middleware('auth')->name('logout');
+
+Route::post('/webhooks/cdek/{token}', CdekWebhookController::class)->name('cdek.webhooks.status');
 
 Route::prefix('shopify')->as('shopify.')->group(function (): void {
     Route::get('/install', [ShopifyOAuthController::class, 'install'])->name('install');

@@ -21,7 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'shopify.session' => VerifyShopifySessionToken::class,
         ]);
-        $middleware->validateCsrfTokens(except: ['shopify/session/exchange', 'shopify/webhooks/*']);
+        $middleware->validateCsrfTokens(except: ['shopify/session/exchange', 'shopify/webhooks/*', 'webhooks/cdek/*']);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

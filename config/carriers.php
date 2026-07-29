@@ -8,5 +8,6 @@ return [
         'client_id' => env('CDEK_CLIENT_ID'),
         'client_secret' => env('CDEK_CLIENT_SECRET'),
         'timeout' => (int) env('CDEK_HTTP_TIMEOUT', 15),
+        'webhook_token' => env('CDEK_WEBHOOK_TOKEN'),
     ],
 ];

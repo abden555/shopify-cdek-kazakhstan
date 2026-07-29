@@ -7,12 +7,12 @@ use App\Domains\Carriers\Actions\CreateShipmentAction;
 use App\Domains\Carriers\Actions\DownloadLabelAction;
 use App\Domains\Carriers\Actions\FindPickupPointsAction;
 use App\Domains\Carriers\Actions\RequestLabelAction;
-use App\Domains\Carriers\Actions\TrackShipmentAction;
 use App\Domains\Carriers\DTOs\RateRequestData;
 use App\Domains\Carriers\DTOs\ShipmentData;
 use App\Domains\Carriers\Exceptions\CarrierRequestException;
 use App\Domains\Carriers\Services\CdekCarrier;
 use App\Domains\Carriers\Services\CdekSettingsService;
+use App\Domains\Carriers\Services\CdekTrackingSynchronizer;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\CancelCdekShipmentRequest;
 use App\Http\Requests\Admin\CreateCdekShipmentRequest;
@@ -20,8 +20,6 @@ use App\Http\Requests\Admin\PrepareShipmentRequest;
 use App\Models\Label;
 use App\Models\Order;
 use App\Models\Shipment;
-use App\Models\Tracking;
-use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -219,7 +217,7 @@ final class ShipmentPreparationController extends Controller
         return to_route('admin.orders.shipments.prepare', $order)->with('status', 'CDEK shipment created successfully.'.($result->trackingNumber ? ' Tracking number: '.$result->trackingNumber.'.' : ''));
     }
 
-    public function track(Order $order, TrackShipmentAction $trackShipment): RedirectResponse
+    public function track(Order $order, CdekTrackingSynchronizer $synchronizer): RedirectResponse
     {
         $shipment = $this->shipment($order);
 
@@ -228,33 +226,12 @@ final class ShipmentPreparationController extends Controller
         }
 
         try {
-            $tracking = $trackShipment->handle('cdek', $shipment->external_id);
+            $eventCount = $synchronizer->sync($shipment);
         } catch (CarrierRequestException) {
             return to_route('admin.orders.shipments.prepare', $order)->with('error', 'CDEK tracking could not be refreshed. Review Failed API Logs.');
         }
 
-        foreach ($tracking->events as $event) {
-            $occurredAt = isset($event['date_time']) ? CarbonImmutable::parse($event['date_time']) : now();
-            $externalId = sha1((string) ($event['code'] ?? 'unknown').'|'.$occurredAt->toIso8601String());
-
-            Tracking::query()->updateOrCreate(
-                ['shipment_id' => $shipment->id, 'external_id' => $externalId],
-                [
-                    'status' => (string) ($event['code'] ?? 'unknown'),
-                    'description' => $event['name'] ?? null,
-                    'location' => $event['city'] ?? null,
-                    'metadata' => $event,
-                    'occurred_at' => $occurredAt,
-                ],
-            );
-        }
-
-        $status = collect($tracking->events)->contains(static fn (array $event): bool => ($event['code'] ?? null) === 'INVALID')
-            ? 'invalid'
-            : $shipment->status;
-        $shipment->update(['tracking_number' => $tracking->trackingNumber, 'status' => $status]);
-
-        return to_route('admin.orders.shipments.prepare', $order)->with('status', count($tracking->events).' CDEK tracking event(s) refreshed.');
+        return to_route('admin.orders.shipments.prepare', $order)->with('status', $eventCount.' CDEK tracking event(s) refreshed.');
     }
 
     public function cancel(CancelCdekShipmentRequest $request, Order $order, CancelShipmentAction $cancelShipment): RedirectResponse
