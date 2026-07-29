@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Domains\Carriers\Actions\CancelShipmentAction;
 use App\Domains\Carriers\Actions\CreateShipmentAction;
 use App\Domains\Carriers\Actions\DownloadLabelAction;
+use App\Domains\Carriers\Actions\FindPickupPointsAction;
 use App\Domains\Carriers\Actions\RequestLabelAction;
 use App\Domains\Carriers\Actions\TrackShipmentAction;
 use App\Domains\Carriers\DTOs\RateRequestData;
@@ -22,6 +23,7 @@ use App\Models\Shipment;
 use App\Models\Tracking;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -125,6 +127,24 @@ final class ShipmentPreparationController extends Controller
         $draft->update(['metadata' => $metadata]);
 
         return to_route('admin.orders.shipments.prepare', $order)->with('status', count($quotes).' CDEK rate option(s) retrieved. Select one and save the draft.');
+    }
+
+    public function pickupPoints(Request $request, FindPickupPointsAction $findPickupPoints): JsonResponse
+    {
+        $data = $request->validate(['location_code' => ['required', 'string', 'max:50']]);
+
+        try {
+            $points = $findPickupPoints->handle('cdek', $data['location_code']);
+        } catch (CarrierRequestException) {
+            return response()->json(['message' => 'CDEK pickup points could not be loaded.'], 422);
+        }
+
+        return response()->json(['data' => array_map(static fn ($point): array => [
+            'code' => $point->code,
+            'name' => $point->name,
+            'address' => $point->address,
+            'work_time' => $point->workTime,
+        ], $points)]);
     }
 
     public function submit(CreateCdekShipmentRequest $request, Order $order, CdekSettingsService $settings, CreateShipmentAction $createShipment): RedirectResponse

@@ -7,6 +7,7 @@ use App\Domains\Carriers\DTOs\AddressValidationResultData;
 use App\Domains\Carriers\DTOs\CarrierAuthenticationData;
 use App\Domains\Carriers\DTOs\CarrierCredentialsData;
 use App\Domains\Carriers\DTOs\LabelData;
+use App\Domains\Carriers\DTOs\PickupPointData;
 use App\Domains\Carriers\DTOs\RateQuoteData;
 use App\Domains\Carriers\DTOs\RateRequestData;
 use App\Domains\Carriers\DTOs\ShipmentData;
@@ -241,6 +242,35 @@ final class CdekCarrier implements CarrierInterface
             $this->failedApiLogger->log('track_shipment', 'GET', $url, [], $exception);
 
             throw new CarrierRequestException('CDEK tracking connection failed.', previous: $exception);
+        }
+    }
+
+    /** @return array<int, PickupPointData> */
+    public function pickupPoints(string $locationCode): array
+    {
+        $url = $this->url('/deliverypoints');
+        $query = ['city_code' => $locationCode, 'type' => 'PVZ', 'is_handout' => 'true'];
+
+        try {
+            $response = $this->authenticatedClient()->get($url, $query);
+
+            if ($response->failed() || ! is_array($response->json())) {
+                $this->throwRequestException('pickup_points', 'GET', $url, $query, $response);
+            }
+
+            return array_values(array_map(static fn (array $point): PickupPointData => new PickupPointData(
+                code: (string) $point['code'],
+                name: (string) ($point['name'] ?? $point['code']),
+                address: (string) data_get($point, 'location.address_full', data_get($point, 'location.address', '')),
+                workTime: isset($point['work_time']) ? (string) $point['work_time'] : null,
+            ), array_filter($response->json(), static fn (mixed $point): bool => is_array($point)
+                && filled($point['code'] ?? null)
+                && ($point['status'] ?? 'ACTIVE') === 'ACTIVE'
+                && ($point['is_handout'] ?? false) === true)));
+        } catch (ConnectionException $exception) {
+            $this->failedApiLogger->log('pickup_points', 'GET', $url, $query, $exception);
+
+            throw new CarrierRequestException('CDEK pickup-point lookup connection failed.', previous: $exception);
         }
     }
 

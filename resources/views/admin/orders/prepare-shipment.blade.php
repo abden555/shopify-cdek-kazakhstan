@@ -25,7 +25,16 @@
                         <div class="col-md-6"><label class="form-label">Country code</label><input name="recipient_country_code" class="form-control @error('recipient_country_code') is-invalid @enderror" value="{{ old('recipient_country_code', $draft?->destination_address['country_code'] ?? ($address['countryCodeV2'] ?? 'KZ')) }}">@error('recipient_country_code')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
                         <div class="col-12"><label class="form-label">City</label><input name="recipient_city" class="form-control @error('recipient_city') is-invalid @enderror" value="{{ old('recipient_city', $draft?->destination_address['city'] ?? ($address['city'] ?? '')) }}">@error('recipient_city')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
                         <div class="col-12"><label class="form-label">CDEK recipient location code</label><input name="recipient_location_code" class="form-control @error('recipient_location_code') is-invalid @enderror" value="{{ old('recipient_location_code', $draft?->destination_address['location_code'] ?? '') }}">@error('recipient_location_code')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
-                        <div class="col-12"><label class="form-label">CDEK recipient pickup-point code <span class="text-body-secondary">(required for pickup-point tariffs)</span></label><input name="recipient_delivery_point_code" class="form-control @error('recipient_delivery_point_code') is-invalid @enderror" value="{{ old('recipient_delivery_point_code', $draft?->destination_address['delivery_point_code'] ?? '') }}">@error('recipient_delivery_point_code')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
+                        <div class="col-12">
+                            <label class="form-label">CDEK recipient pickup-point code <span class="text-body-secondary">(required for pickup-point tariffs)</span></label>
+                            <div class="input-group">
+                                <input id="recipient_delivery_point_code" name="recipient_delivery_point_code" class="form-control @error('recipient_delivery_point_code') is-invalid @enderror" value="{{ old('recipient_delivery_point_code', $draft?->destination_address['delivery_point_code'] ?? '') }}">
+                                <button id="load-pickup-points" class="btn btn-outline-secondary" type="button" data-url="{{ route('admin.orders.shipments.pickup-points') }}"><i class="bi bi-geo-alt me-1"></i>Load pickup points</button>
+                            </div>
+                            <select id="pickup-point-results" class="form-select mt-2 d-none" aria-label="CDEK pickup point results"></select>
+                            <div id="pickup-point-feedback" class="form-text">Uses the recipient CDEK location code to find active CDEK handout points.</div>
+                            @error('recipient_delivery_point_code')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                        </div>
                         <div class="col-12"><label class="form-label">Address</label><input name="recipient_address" class="form-control @error('recipient_address') is-invalid @enderror" value="{{ old('recipient_address', $draft?->destination_address['address'] ?? trim(($address['address1'] ?? '').' '.($address['address2'] ?? ''))) }}">@error('recipient_address')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
                     </div>
                 </section>
@@ -104,4 +113,57 @@
             </div>
         </section>
     @endif
+    <script>
+        (() => {
+            const locationCode = document.querySelector('[name="recipient_location_code"]');
+            const pointCode = document.getElementById('recipient_delivery_point_code');
+            const loadButton = document.getElementById('load-pickup-points');
+            const results = document.getElementById('pickup-point-results');
+            const feedback = document.getElementById('pickup-point-feedback');
+
+            loadButton?.addEventListener('click', async () => {
+                if (!locationCode?.value.trim()) {
+                    feedback.textContent = 'Enter the recipient CDEK location code first.';
+                    return;
+                }
+
+                loadButton.disabled = true;
+                feedback.textContent = 'Loading CDEK pickup points…';
+
+                try {
+                    const response = await fetch(loadButton.dataset.url + '?location_code=' + encodeURIComponent(locationCode.value.trim()), {
+                        headers: { Accept: 'application/json' },
+                    });
+                    const payload = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(payload.message || 'CDEK pickup points could not be loaded.');
+                    }
+
+                    results.replaceChildren();
+                    results.add(new Option('Select a CDEK pickup point', ''));
+
+                    payload.data.forEach((point) => {
+                        const details = [point.name, point.address, point.work_time].filter(Boolean).join(' — ');
+                        results.add(new Option(point.code + ': ' + details, point.code));
+                    });
+
+                    results.classList.toggle('d-none', payload.data.length === 0);
+                    feedback.textContent = payload.data.length
+                        ? payload.data.length + ' active pickup point(s) found. Select one to fill the code.'
+                        : 'No active pickup points were found for this location.';
+                } catch (error) {
+                    feedback.textContent = error.message || 'CDEK pickup points could not be loaded.';
+                } finally {
+                    loadButton.disabled = false;
+                }
+            });
+
+            results?.addEventListener('change', () => {
+                if (results.value) {
+                    pointCode.value = results.value;
+                }
+            });
+        })();
+    </script>
 </x-admin.layout>
