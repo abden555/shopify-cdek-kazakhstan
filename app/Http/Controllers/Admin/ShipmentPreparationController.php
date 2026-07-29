@@ -162,6 +162,7 @@ final class ShipmentPreparationController extends Controller
                     'phone' => $configuration->senderPhone,
                     'location_code' => $configuration->senderLocationCode,
                     'address' => $configuration->senderAddress,
+                    'pickup_point_code' => $configuration->senderPickupPointCode,
                 ],
                 recipient: [
                     'name' => $shipment->recipient['name'] ?? null,

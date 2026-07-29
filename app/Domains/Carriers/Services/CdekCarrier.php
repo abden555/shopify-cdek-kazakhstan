@@ -72,19 +72,24 @@ final class CdekCarrier implements CarrierInterface
             'code' => $shipment->recipient['location_code'] ?? null,
             'address' => $shipment->recipient['address'] ?? null,
         ]);
+        $fromLocation = array_filter([
+            'code' => $shipment->sender['location_code'] ?? null,
+            'address' => $shipment->sender['address'] ?? null,
+        ]);
 
         if (filled($shipment->recipient['delivery_point_code'] ?? null)) {
             unset($toLocation['address']);
+        }
+
+        if (filled($shipment->sender['pickup_point_code'] ?? null)) {
+            unset($fromLocation['address']);
         }
 
         $payload = [
             'type' => 1,
             'number' => $shipment->reference,
             'tariff_code' => $shipment->serviceCode,
-            'from_location' => array_filter([
-                'code' => $shipment->sender['location_code'] ?? null,
-                'address' => $shipment->sender['address'] ?? null,
-            ]),
+            'from_location' => $fromLocation,
             'to_location' => $toLocation,
             'sender' => [
                 'name' => $shipment->sender['name'] ?? null,
@@ -99,6 +104,10 @@ final class CdekCarrier implements CarrierInterface
 
         if (filled($shipment->recipient['delivery_point_code'] ?? null)) {
             $payload['delivery_point'] = $shipment->recipient['delivery_point_code'];
+        }
+
+        if (filled($shipment->sender['pickup_point_code'] ?? null)) {
+            $payload['shipment_point'] = $shipment->sender['pickup_point_code'];
         }
 
         try {
