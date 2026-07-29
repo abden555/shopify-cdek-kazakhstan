@@ -25,6 +25,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class ShipmentPreparationController extends Controller
@@ -145,6 +146,7 @@ final class ShipmentPreparationController extends Controller
 
         $totalQuantity = max(1, (int) $order->items->sum('quantity'));
         $weightPerItem = max(1, (int) floor(((int) $parcel['weight_grams']) / $totalQuantity));
+        $cdekReference = 'CDEK'.strtoupper(Str::random(24));
         $packageItems = $order->items->map(static fn ($item): array => [
             'name' => $item->title,
             'ware_key' => $item->sku ?: $item->id,
@@ -156,7 +158,7 @@ final class ShipmentPreparationController extends Controller
 
         try {
             $result = $createShipment->handle('cdek', new ShipmentData(
-                reference: 'CDEK'.strtoupper(str_replace('-', '', $shipment->id)),
+                reference: $cdekReference,
                 sender: [
                     'name' => $configuration->senderCompany,
                     'phone' => $configuration->senderPhone,
@@ -186,7 +188,7 @@ final class ShipmentPreparationController extends Controller
         }
 
         $metadata = $shipment->metadata ?? [];
-        $metadata['cdek_reference'] = 'CDEK'.strtoupper(str_replace('-', '', $shipment->id));
+        $metadata['cdek_reference'] = $cdekReference;
         $shipment->update([
             'external_id' => $result->carrierShipmentId,
             'tracking_number' => $result->trackingNumber,
