@@ -35,15 +35,6 @@ final class CdekCarrier implements CarrierInterface
     public function authenticate(CarrierCredentialsData $credentials): CarrierAuthenticationData
     {
         $url = $this->url('/oauth/token');
-        $toLocation = array_filter([
-            'code' => $shipment->recipient['location_code'] ?? null,
-            'address' => $shipment->recipient['address'] ?? null,
-        ]);
-
-        if (filled($shipment->recipient['delivery_point_code'] ?? null)) {
-            unset($toLocation['address']);
-        }
-
         $payload = [
             'grant_type' => 'client_credentials',
             'client_id' => $credentials->clientId,
@@ -77,6 +68,15 @@ final class CdekCarrier implements CarrierInterface
         }
 
         $url = $this->url('/orders');
+        $toLocation = array_filter([
+            'code' => $shipment->recipient['location_code'] ?? null,
+            'address' => $shipment->recipient['address'] ?? null,
+        ]);
+
+        if (filled($shipment->recipient['delivery_point_code'] ?? null)) {
+            unset($toLocation['address']);
+        }
+
         $payload = [
             'type' => 1,
             'number' => $shipment->reference,
