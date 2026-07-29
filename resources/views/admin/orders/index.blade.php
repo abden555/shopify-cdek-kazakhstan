@@ -48,7 +48,8 @@
                             <td><span class="badge text-bg-light border">{{ str($order->fulfillment_status ?? 'unfulfilled')->lower()->replace('_', ' ') }}</span></td>
                             <td>
                                 @if ($order->shipments_count)
-                                    <span class="badge text-bg-success">{{ $order->shipments_count }} created</span>
+                                    <a class="btn btn-sm btn-outline-primary" href="{{ route('admin.orders.shipments.prepare', $order) }}"><i class="bi bi-box-seam me-1"></i>View shipment</a>
+                                    <div class="small text-body-secondary mt-1">{{ $order->shipments_count }} shipment(s)</div>
                                 @else
                                     <a class="btn btn-sm {{ empty($address['city']) || empty($address['phone']) ? 'btn-outline-warning' : 'btn-primary' }}" href="{{ route('admin.orders.shipments.prepare', $order) }}">Prepare shipment</a>
                                 @endif
