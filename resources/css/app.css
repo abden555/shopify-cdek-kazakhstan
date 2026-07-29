@@ -8,12 +8,18 @@
 }
 
 body { background: var(--app-surface); }
+.admin-content .card { border: 0; border-radius: .9rem; box-shadow: 0 .125rem .75rem rgba(15, 23, 42, .06); }
+.admin-content .table > :not(caption) > * > * { padding: .9rem .75rem; vertical-align: middle; }
+.admin-content .btn { border-radius: .55rem; font-weight: 600; }
+.admin-content .form-control, .admin-content .form-select { border-radius: .55rem; padding: .65rem .75rem; }
 .auth-page { align-items: center; background: linear-gradient(135deg, #e0e7ff 0%, #f8fafc 48%, #fef3c7 100%); display: flex; justify-content: center; min-height: 100vh; padding: 1.5rem; }
 .auth-card { max-width: 28rem; width: 100%; }.brand-dark { color: var(--app-navy); }
 .admin-shell { min-height: 100vh; }
 .admin-sidebar { background: var(--app-navy); color: #cbd5e1; width: var(--app-sidebar-width) !important; }
 .admin-sidebar-content { display: flex; flex-direction: column; min-height: 100%; padding: 1.5rem 1rem; }
 .brand { align-items: center; color: #fff; font-size: 1.25rem; font-weight: 800; letter-spacing: .08em; text-decoration: none; }
+.brand-logo { background: #fff; border-radius: .45rem; max-height: 2.5rem; max-width: 11rem; object-fit: contain; padding: .2rem; }
+.branding-preview { background: #172033; border-radius: .65rem; max-height: 6rem; max-width: 18rem; object-fit: contain; padding: .5rem; }
 .brand span { color: #fbbf24; }
 .brand-caption { color: #94a3b8; font-size: .75rem; margin: .35rem 0 2rem; }
 .sidebar-nav { gap: .25rem; }

@@ -1,8 +1,11 @@
 <?php
 
+use App\Http\Controllers\Admin\AccountController;
+use App\Http\Controllers\Admin\BrandingController;
 use App\Http\Controllers\Admin\CdekSettingsController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\OrderController;
+use App\Http\Controllers\Admin\ShipmentController;
 use App\Http\Controllers\Admin\ShipmentPreparationController;
 use App\Http\Controllers\Admin\ShopifyOrderSyncController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
@@ -32,7 +35,10 @@ Route::prefix('shopify')->as('shopify.')->group(function (): void {
 
 Route::middleware(['auth', 'role:administrator'])->prefix('admin')->as('admin.')->group(function (): void {
     Route::get('/', DashboardController::class)->name('dashboard');
+    Route::get('/account', [AccountController::class, 'edit'])->name('account.edit');
+    Route::put('/account', [AccountController::class, 'update'])->name('account.update');
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+    Route::get('/shipments', [ShipmentController::class, 'index'])->name('shipments.index');
     Route::post('/orders/sync', ShopifyOrderSyncController::class)->name('orders.sync');
     Route::get('/orders/{order}/shipment', [ShipmentPreparationController::class, 'create'])->name('orders.shipments.prepare');
     Route::put('/orders/{order}/shipment', [ShipmentPreparationController::class, 'store'])->name('orders.shipments.store');
@@ -46,4 +52,6 @@ Route::middleware(['auth', 'role:administrator'])->prefix('admin')->as('admin.')
     Route::get('/settings/cdek', [CdekSettingsController::class, 'edit'])->name('settings.cdek.edit');
     Route::put('/settings/cdek', [CdekSettingsController::class, 'update'])->name('settings.cdek.update');
     Route::post('/settings/cdek/test', [CdekSettingsController::class, 'test'])->name('settings.cdek.test');
+    Route::get('/settings/branding', [BrandingController::class, 'edit'])->name('settings.branding.edit');
+    Route::put('/settings/branding', [BrandingController::class, 'update'])->name('settings.branding.update');
 });

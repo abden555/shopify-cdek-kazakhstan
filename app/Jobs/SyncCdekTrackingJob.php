@@ -33,6 +33,7 @@ final class SyncCdekTrackingJob implements ShouldQueue
 
         try {
             $synchronizer->sync($shipment);
+            SyncShopifyFulfillmentJob::dispatch($shipment->id);
         } catch (CarrierRequestException $exception) {
             Log::warning('CDEK tracking synchronization failed.', ['shipment_id' => $shipment->id, 'message' => $exception->getMessage()]);
 

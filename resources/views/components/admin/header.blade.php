@@ -15,12 +15,12 @@
             <span class="position-absolute top-0 start-100 translate-middle p-1 bg-warning border border-light rounded-circle"><span class="visually-hidden">No unread notifications</span></span>
         </button>
         <div class="d-none d-sm-block text-end">
-            <div class="fw-semibold small">{{ auth()->user()->name }}</div>
+            <a class="fw-semibold small text-decoration-none text-body" href="{{ route('admin.account.edit') }}">{{ auth()->user()->name }}</a>
             <form action="{{ route('logout') }}" method="POST">
                 @csrf
                 <button class="btn btn-link btn-sm p-0 text-body-secondary" type="submit">Sign out</button>
             </form>
         </div>
-        <div class="avatar" aria-hidden="true">A</div>
+        <a class="avatar text-decoration-none" href="{{ route('admin.account.edit') }}" aria-label="Manage your account">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</a>
     </div>
 </header>

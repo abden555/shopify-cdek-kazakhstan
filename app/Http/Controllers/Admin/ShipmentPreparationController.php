@@ -17,6 +17,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\CancelCdekShipmentRequest;
 use App\Http\Requests\Admin\CreateCdekShipmentRequest;
 use App\Http\Requests\Admin\PrepareShipmentRequest;
+use App\Jobs\SyncShopifyFulfillmentJob;
 use App\Models\Label;
 use App\Models\Order;
 use App\Models\Shipment;
@@ -213,8 +214,9 @@ final class ShipmentPreparationController extends Controller
             'status' => 'created',
             'metadata' => $metadata,
         ]);
+        SyncShopifyFulfillmentJob::dispatch($shipment->id);
 
-        return to_route('admin.orders.shipments.prepare', $order)->with('status', 'CDEK shipment created successfully.'.($result->trackingNumber ? ' Tracking number: '.$result->trackingNumber.'.' : ''));
+        return to_route('admin.orders.shipments.prepare', $order)->with('status', 'CDEK shipment created successfully.'.($result->trackingNumber ? ' Tracking number: '.$result->trackingNumber.'. Shopify fulfillment synchronization has been queued.' : ''));
     }
 
     public function track(Order $order, CdekTrackingSynchronizer $synchronizer): RedirectResponse

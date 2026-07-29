@@ -4,6 +4,7 @@
             <h1 class="h3 mb-1">CDEK settings</h1>
             <p class="text-body-secondary mb-0">Manage the CDEK integration and sender profile.</p>
         </div>
+        <a class="btn btn-outline-primary" href="{{ route('admin.settings.branding.edit') }}"><i class="bi bi-image me-1"></i>Application logo</a>
     </div>
 
     @if (session('status'))
