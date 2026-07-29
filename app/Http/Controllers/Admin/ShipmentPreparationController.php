@@ -139,20 +139,23 @@ final class ShipmentPreparationController extends Controller
             'amount' => (int) $item->quantity,
             'cost' => (float) $item->unit_price,
             'weight' => $weightPerItem,
+            'payment' => ['value' => 0],
         ])->all();
 
         try {
             $result = $createShipment->handle('cdek', new ShipmentData(
-                reference: 'CDEK-'.$shipment->id,
+                reference: 'CDEK'.strtoupper(str_replace('-', '', $shipment->id)),
                 sender: [
                     'name' => $configuration->senderCompany,
                     'phone' => $configuration->senderPhone,
                     'location_code' => $configuration->senderLocationCode,
+                    'address' => $configuration->senderAddress,
                 ],
                 recipient: [
                     'name' => $shipment->recipient['name'] ?? null,
                     'phone' => $shipment->recipient['phone'] ?? null,
                     'location_code' => $destination['location_code'],
+                    'address' => $destination['address'] ?? null,
                 ],
                 items: [[
                     'number' => '1',
@@ -169,7 +172,7 @@ final class ShipmentPreparationController extends Controller
         }
 
         $metadata = $shipment->metadata ?? [];
-        $metadata['cdek_reference'] = 'CDEK-'.$shipment->id;
+        $metadata['cdek_reference'] = 'CDEK'.strtoupper(str_replace('-', '', $shipment->id));
         $shipment->update([
             'external_id' => $result->carrierShipmentId,
             'tracking_number' => $result->trackingNumber,

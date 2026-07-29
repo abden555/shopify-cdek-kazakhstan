@@ -73,8 +73,14 @@ final class CdekCarrier implements CarrierInterface
             'type' => 1,
             'number' => $shipment->reference,
             'tariff_code' => $shipment->serviceCode,
-            'from_location' => ['code' => $shipment->sender['location_code'] ?? null],
-            'to_location' => ['code' => $shipment->recipient['location_code'] ?? null],
+            'from_location' => array_filter([
+                'code' => $shipment->sender['location_code'] ?? null,
+                'address' => $shipment->sender['address'] ?? null,
+            ]),
+            'to_location' => array_filter([
+                'code' => $shipment->recipient['location_code'] ?? null,
+                'address' => $shipment->recipient['address'] ?? null,
+            ]),
             'sender' => [
                 'name' => $shipment->sender['name'] ?? null,
                 'phones' => [['number' => $shipment->sender['phone'] ?? null]],
