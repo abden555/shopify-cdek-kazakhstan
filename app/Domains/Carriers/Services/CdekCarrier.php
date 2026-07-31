@@ -233,16 +233,39 @@ final class CdekCarrier implements CarrierInterface
                 $this->throwRequestException('locations', 'GET', $url, $query, $response);
             }
 
-            return array_values(array_map(static fn (array $location): LocationData => new LocationData(
-                code: (string) $location['code'],
-                name: (string) ($location['full_name'] ?? $location['name'] ?? $city),
-                countryCode: isset($location['country_code']) ? (string) $location['country_code'] : null,
-            ), array_filter($response->json(), static fn (mixed $location): bool => is_array($location) && filled($location['code'] ?? null))));
+            $locations = $this->locationData($response->json(), $city);
+
+            if ($locations !== []) {
+                return $locations;
+            }
+
+            // The education environment occasionally has no entries in the suggestion index.
+            // The city directory is the authoritative fallback and supports Kazakhstan cities.
+            $directoryUrl = $this->url('/location/cities');
+            $directoryQuery = ['country_codes' => strtoupper($countryCode), 'city' => $city];
+            $directoryResponse = $this->authenticatedClient()->get($directoryUrl, $directoryQuery);
+
+            if ($directoryResponse->failed() || ! is_array($directoryResponse->json())) {
+                $this->throwRequestException('locations_directory', 'GET', $directoryUrl, $directoryQuery, $directoryResponse);
+            }
+
+            return $this->locationData($directoryResponse->json(), $city);
         } catch (ConnectionException $exception) {
             $this->failedApiLogger->log('locations', 'GET', $url, $query, $exception);
 
             throw new CarrierRequestException('CDEK location lookup connection failed.', previous: $exception);
         }
+    }
+
+    /** @param array<int, mixed> $locations
+     *  @return array<int, LocationData> */
+    private function locationData(array $locations, string $fallbackName): array
+    {
+        return array_values(array_map(static fn (array $location): LocationData => new LocationData(
+            code: (string) $location['code'],
+            name: (string) ($location['full_name'] ?? $location['city'] ?? $location['name'] ?? $fallbackName),
+            countryCode: isset($location['country_code']) ? (string) $location['country_code'] : null,
+        ), array_filter($locations, static fn (mixed $location): bool => is_array($location) && filled($location['code'] ?? null))));
     }
 
     public function trackShipment(string $trackingNumber): TrackingData
