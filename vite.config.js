@@ -5,8 +5,8 @@ export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), 'VITE_');
 
     return {
-        // Shared-hosting deployments under a URL subdirectory need this explicit build base.
-        base: env.VITE_ASSET_BASE || '/build/',
+        // Relative asset URLs keep font and image files working when Laravel is deployed in a URL subdirectory.
+        base: env.VITE_ASSET_BASE || './',
         plugins: [
             laravel({
                 input: ['resources/css/app.css', 'resources/js/app.js'],
