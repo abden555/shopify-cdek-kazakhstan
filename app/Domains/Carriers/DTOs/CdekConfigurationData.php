@@ -15,5 +15,9 @@ final readonly class CdekConfigurationData
         public ?string $senderAddress,
         public ?string $senderPickupPointCode,
         public ?int $defaultTariffCode,
+        public ?int $defaultWeightGrams,
+        public ?int $defaultLengthCm,
+        public ?int $defaultWidthCm,
+        public ?int $defaultHeightCm,
     ) {}
 }

@@ -7,6 +7,7 @@ use App\Domains\Carriers\DTOs\AddressValidationResultData;
 use App\Domains\Carriers\DTOs\CarrierAuthenticationData;
 use App\Domains\Carriers\DTOs\CarrierCredentialsData;
 use App\Domains\Carriers\DTOs\LabelData;
+use App\Domains\Carriers\DTOs\LocationData;
 use App\Domains\Carriers\DTOs\PickupPointData;
 use App\Domains\Carriers\DTOs\RateQuoteData;
 use App\Domains\Carriers\DTOs\RateRequestData;
@@ -216,6 +217,31 @@ final class CdekCarrier implements CarrierInterface
             $this->failedApiLogger->log('request_label', 'POST', $url, $payload, $exception);
 
             throw new CarrierRequestException('CDEK label request connection failed.', previous: $exception);
+        }
+    }
+
+    /** @return array<int, LocationData> */
+    public function locations(string $city, string $countryCode): array
+    {
+        $url = $this->url('/location/suggest/cities');
+        $query = ['name' => $city, 'country_code' => strtoupper($countryCode)];
+
+        try {
+            $response = $this->authenticatedClient()->get($url, $query);
+
+            if ($response->failed() || ! is_array($response->json())) {
+                $this->throwRequestException('locations', 'GET', $url, $query, $response);
+            }
+
+            return array_values(array_map(static fn (array $location): LocationData => new LocationData(
+                code: (string) $location['code'],
+                name: (string) ($location['full_name'] ?? $location['name'] ?? $city),
+                countryCode: isset($location['country_code']) ? (string) $location['country_code'] : null,
+            ), array_filter($response->json(), static fn (mixed $location): bool => is_array($location) && filled($location['code'] ?? null))));
+        } catch (ConnectionException $exception) {
+            $this->failedApiLogger->log('locations', 'GET', $url, $query, $exception);
+
+            throw new CarrierRequestException('CDEK location lookup connection failed.', previous: $exception);
         }
     }
 

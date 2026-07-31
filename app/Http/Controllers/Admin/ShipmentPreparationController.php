@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Domains\Carriers\Actions\CancelShipmentAction;
 use App\Domains\Carriers\Actions\CreateShipmentAction;
 use App\Domains\Carriers\Actions\DownloadLabelAction;
+use App\Domains\Carriers\Actions\FindLocationsAction;
 use App\Domains\Carriers\Actions\FindPickupPointsAction;
 use App\Domains\Carriers\Actions\RequestLabelAction;
 use App\Domains\Carriers\DTOs\RateRequestData;
@@ -37,8 +38,16 @@ final class ShipmentPreparationController extends Controller
         $draft = $this->shipment($order);
         $address = $order->shipping_address ?? [];
         $configuration = $settings->configuration();
+        $order->loadMissing('items');
+        $orderWeight = (int) $order->items->sum(static fn ($item): int => (int) $item->weight_grams * (int) $item->quantity);
+        $defaultParcel = [
+            'weight_grams' => max(1, $orderWeight ?: ($configuration->defaultWeightGrams ?? 100)),
+            'length_cm' => $configuration->defaultLengthCm ?? 20,
+            'width_cm' => $configuration->defaultWidthCm ?? 20,
+            'height_cm' => $configuration->defaultHeightCm ?? 20,
+        ];
 
-        return view('admin.orders.prepare-shipment', compact('order', 'draft', 'address', 'configuration'));
+        return view('admin.orders.prepare-shipment', compact('order', 'draft', 'address', 'configuration', 'defaultParcel'));
     }
 
     public function store(PrepareShipmentRequest $request, Order $order, CdekSettingsService $settings): RedirectResponse
@@ -144,6 +153,25 @@ final class ShipmentPreparationController extends Controller
             'address' => $point->address,
             'work_time' => $point->workTime,
         ], $points)]);
+    }
+
+    public function locations(Request $request, FindLocationsAction $findLocations): JsonResponse
+    {
+        $data = $request->validate([
+            'city' => ['required', 'string', 'max:255'],
+            'country_code' => ['required', 'string', 'size:2'],
+        ]);
+
+        try {
+            $locations = $findLocations->handle('cdek', $data['city'], $data['country_code']);
+        } catch (CarrierRequestException) {
+            return response()->json(['message' => 'CDEK locations could not be loaded.'], 422);
+        }
+
+        return response()->json(['data' => array_map(static fn ($location): array => [
+            'code' => $location->code,
+            'name' => $location->name,
+        ], $locations)]);
     }
 
     public function submit(CreateCdekShipmentRequest $request, Order $order, CdekSettingsService $settings, CreateShipmentAction $createShipment): RedirectResponse

@@ -6,6 +6,7 @@ use App\Domains\Carriers\DTOs\AddressValidationResultData;
 use App\Domains\Carriers\DTOs\CarrierAuthenticationData;
 use App\Domains\Carriers\DTOs\CarrierCredentialsData;
 use App\Domains\Carriers\DTOs\LabelData;
+use App\Domains\Carriers\DTOs\LocationData;
 use App\Domains\Carriers\DTOs\PickupPointData;
 use App\Domains\Carriers\DTOs\RateQuoteData;
 use App\Domains\Carriers\DTOs\RateRequestData;
@@ -26,6 +27,9 @@ interface CarrierInterface
     public function requestLabel(string $carrierShipmentId): string;
 
     public function downloadLabel(string $carrierShipmentId): LabelData;
+
+    /** @return array<int, LocationData> */
+    public function locations(string $city, string $countryCode): array;
 
     /** @return array<int, PickupPointData> */
     public function pickupPoints(string $locationCode): array;

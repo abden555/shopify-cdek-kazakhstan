@@ -43,6 +43,14 @@
             </div>
 
             <hr class="my-4">
+            <h2 class="h5 mb-1">Default parcel</h2>
+            <p class="text-body-secondary small mb-3">Used when an order has no Shopify product weight. Set these to match your Shopify default package.</p>
+            <div class="row g-3 mb-4">
+                @foreach (['default_weight_grams' => 'Weight (grams)', 'default_length_cm' => 'Length (cm)', 'default_width_cm' => 'Width (cm)', 'default_height_cm' => 'Height (cm)'] as $field => $label)
+                    <div class="col-md-3"><label class="form-label" for="{{ $field }}">{{ $label }}</label><input type="number" min="1" class="form-control @error($field) is-invalid @enderror" id="{{ $field }}" name="{{ $field }}" value="{{ old($field, $settings[$field]) }}">@error($field)<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
+                @endforeach
+            </div>
+            <hr class="my-4">
             <h2 class="h5 mb-3">Sender profile</h2>
             <div class="row g-3">
                 @foreach (['sender_company' => 'Company name', 'sender_phone' => 'Contact phone', 'sender_city' => 'City', 'sender_location_code' => 'CDEK sender location code', 'sender_pickup_point_code' => 'CDEK pickup-point code'] as $field => $label)

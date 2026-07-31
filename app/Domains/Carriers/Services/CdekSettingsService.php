@@ -19,6 +19,7 @@ final class CdekSettingsService
         foreach ([
             'base_url', 'client_id', 'sender_company', 'sender_phone', 'sender_city', 'sender_location_code',
             'sender_address', 'sender_pickup_point_code', 'default_tariff_code',
+            'default_weight_grams', 'default_length_cm', 'default_width_cm', 'default_height_cm',
         ] as $key) {
             $this->put($key, $input[$key] ?? null);
         }
@@ -41,6 +42,10 @@ final class CdekSettingsService
             senderAddress: $this->nullable('sender_address'),
             senderPickupPointCode: $this->nullable('sender_pickup_point_code'),
             defaultTariffCode: ($value = $this->get('default_tariff_code')) !== null ? (int) $value : null,
+            defaultWeightGrams: ($value = $this->get('default_weight_grams')) !== null ? (int) $value : null,
+            defaultLengthCm: ($value = $this->get('default_length_cm')) !== null ? (int) $value : null,
+            defaultWidthCm: ($value = $this->get('default_width_cm')) !== null ? (int) $value : null,
+            defaultHeightCm: ($value = $this->get('default_height_cm')) !== null ? (int) $value : null,
         );
     }
 
@@ -60,6 +65,10 @@ final class CdekSettingsService
             'sender_address' => $configuration->senderAddress,
             'sender_pickup_point_code' => $configuration->senderPickupPointCode,
             'default_tariff_code' => $configuration->defaultTariffCode,
+            'default_weight_grams' => $configuration->defaultWeightGrams,
+            'default_length_cm' => $configuration->defaultLengthCm,
+            'default_width_cm' => $configuration->defaultWidthCm,
+            'default_height_cm' => $configuration->defaultHeightCm,
         ];
     }
 

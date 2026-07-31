@@ -44,6 +44,7 @@ Route::middleware(['auth', 'role:administrator'])->prefix('admin')->as('admin.')
     Route::put('/orders/{order}/shipment', [ShipmentPreparationController::class, 'store'])->name('orders.shipments.store');
     Route::post('/orders/{order}/shipment/rates', [ShipmentPreparationController::class, 'rates'])->name('orders.shipments.rates');
     Route::get('/orders/shipment/pickup-points', [ShipmentPreparationController::class, 'pickupPoints'])->name('orders.shipments.pickup-points');
+    Route::get('/orders/shipment/locations', [ShipmentPreparationController::class, 'locations'])->name('orders.shipments.locations');
     Route::post('/orders/{order}/shipment/submit', [ShipmentPreparationController::class, 'submit'])->name('orders.shipments.submit');
     Route::post('/orders/{order}/shipment/tracking', [ShipmentPreparationController::class, 'track'])->name('orders.shipments.track');
     Route::post('/orders/{order}/shipment/cancel', [ShipmentPreparationController::class, 'cancel'])->name('orders.shipments.cancel');

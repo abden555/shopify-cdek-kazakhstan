@@ -22,9 +22,9 @@
                     <div class="row g-3">
                         <div class="col-12"><label class="form-label">Name</label><input name="recipient_name" class="form-control @error('recipient_name') is-invalid @enderror" value="{{ old('recipient_name', $draft?->recipient['name'] ?? trim(($address['firstName'] ?? '').' '.($address['lastName'] ?? ''))) }}">@error('recipient_name')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
                         <div class="col-md-6"><label class="form-label">Phone</label><input name="recipient_phone" class="form-control @error('recipient_phone') is-invalid @enderror" value="{{ old('recipient_phone', $draft?->recipient['phone'] ?? ($address['phone'] ?? '')) }}">@error('recipient_phone')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
-                        <div class="col-md-6"><label class="form-label">Country code</label><input name="recipient_country_code" class="form-control @error('recipient_country_code') is-invalid @enderror" value="{{ old('recipient_country_code', $draft?->destination_address['country_code'] ?? ($address['countryCodeV2'] ?? 'KZ')) }}">@error('recipient_country_code')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
-                        <div class="col-12"><label class="form-label">City</label><input name="recipient_city" class="form-control @error('recipient_city') is-invalid @enderror" value="{{ old('recipient_city', $draft?->destination_address['city'] ?? ($address['city'] ?? '')) }}">@error('recipient_city')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
-                        <div class="col-12"><label class="form-label">CDEK recipient location code</label><input name="recipient_location_code" class="form-control @error('recipient_location_code') is-invalid @enderror" value="{{ old('recipient_location_code', $draft?->destination_address['location_code'] ?? '') }}">@error('recipient_location_code')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
+                        <div class="col-md-6"><label class="form-label">Country code</label><input id="recipient_country_code" name="recipient_country_code" class="form-control @error('recipient_country_code') is-invalid @enderror" value="{{ old('recipient_country_code', $draft?->destination_address['country_code'] ?? ($address['countryCodeV2'] ?? 'KZ')) }}">@error('recipient_country_code')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
+                        <div class="col-12"><label class="form-label">City</label><input id="recipient_city" name="recipient_city" class="form-control @error('recipient_city') is-invalid @enderror" value="{{ old('recipient_city', $draft?->destination_address['city'] ?? ($address['city'] ?? '')) }}">@error('recipient_city')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
+                        <div class="col-12"><label class="form-label">CDEK recipient location code</label><input id="recipient_location_code" name="recipient_location_code" class="form-control @error('recipient_location_code') is-invalid @enderror" value="{{ old('recipient_location_code', $draft?->destination_address['location_code'] ?? '') }}"><div id="location-feedback" class="form-text" data-url="{{ route('admin.orders.shipments.locations') }}">Filled automatically from the recipient city. You can change it if required.</div>@error('recipient_location_code')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
                         <div class="col-12">
                             <label class="form-label">CDEK recipient pickup-point code <span class="text-body-secondary">(required for pickup-point tariffs)</span></label>
                             <div class="input-group">
@@ -32,7 +32,7 @@
                                 <button id="load-pickup-points" class="btn btn-outline-secondary" type="button" data-url="{{ route('admin.orders.shipments.pickup-points') }}"><i class="bi bi-geo-alt me-1"></i>Load pickup points</button>
                             </div>
                             <select id="pickup-point-results" class="form-select mt-2 d-none" aria-label="CDEK pickup point results"></select>
-                            <div id="pickup-point-feedback" class="form-text">Uses the recipient CDEK location code to find active CDEK handout points.</div>
+                            <div id="pickup-point-feedback" class="form-text">An active pickup point is selected automatically after the recipient location is identified. You can choose another one.</div>
                             @error('recipient_delivery_point_code')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-12"><label class="form-label">Address</label><input name="recipient_address" class="form-control @error('recipient_address') is-invalid @enderror" value="{{ old('recipient_address', $draft?->destination_address['address'] ?? trim(($address['address1'] ?? '').' '.($address['address2'] ?? ''))) }}">@error('recipient_address')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
@@ -43,7 +43,7 @@
                     <div class="row g-3">
                         <div class="col-12"><label class="form-label">CDEK tariff code <span class="text-body-secondary">(optional for draft)</span></label><input id="tariff_code" type="number" min="1" name="tariff_code" class="form-control" value="{{ old('tariff_code', $draft?->service_code ?? $configuration->defaultTariffCode) }}"></div>
                         @foreach (['weight_grams' => 'Weight (grams)', 'length_cm' => 'Length (cm)', 'width_cm' => 'Width (cm)', 'height_cm' => 'Height (cm)'] as $field => $label)
-                            <div class="col-md-6"><label class="form-label">{{ $label }}</label><input type="number" min="1" name="{{ $field }}" class="form-control @error($field) is-invalid @enderror" value="{{ old($field, $parcel[$field] ?? '') }}">@error($field)<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
+                            <div class="col-md-6"><label class="form-label">{{ $label }}</label><input type="number" min="1" name="{{ $field }}" class="form-control @error($field) is-invalid @enderror" value="{{ old($field, $parcel[$field] ?? $defaultParcel[$field]) }}">@error($field)<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
                         @endforeach
                         <div class="col-12"><label class="form-label">Declared value <span class="text-body-secondary">({{ $order->currency }})</span></label><input type="number" min="0" step="0.01" name="declared_value" class="form-control" value="{{ old('declared_value', $parcel['declared_value'] ?? $order->total_amount) }}"></div>
                     </div>
@@ -115,16 +115,19 @@
     @endif
     <script>
         (() => {
-            const locationCode = document.querySelector('[name="recipient_location_code"]');
+            const locationCode = document.getElementById('recipient_location_code');
+            const city = document.getElementById('recipient_city');
+            const countryCode = document.getElementById('recipient_country_code');
+            const locationFeedback = document.getElementById('location-feedback');
             const pointCode = document.getElementById('recipient_delivery_point_code');
             const loadButton = document.getElementById('load-pickup-points');
             const results = document.getElementById('pickup-point-results');
             const feedback = document.getElementById('pickup-point-feedback');
 
-            loadButton?.addEventListener('click', async () => {
+            const loadPickupPoints = async (selectFirst = false) => {
                 if (!locationCode?.value.trim()) {
-                    feedback.textContent = 'Enter the recipient CDEK location code first.';
-                    return;
+                    feedback.textContent = 'Waiting for the recipient location code.';
+                    return false;
                 }
 
                 loadButton.disabled = true;
@@ -149,15 +152,41 @@
                     });
 
                     results.classList.toggle('d-none', payload.data.length === 0);
+                    if (selectFirst && payload.data.length && !pointCode.value.trim()) {
+                        results.value = payload.data[0].code;
+                        pointCode.value = payload.data[0].code;
+                    }
                     feedback.textContent = payload.data.length
-                        ? payload.data.length + ' active pickup point(s) found. Select one to fill the code.'
+                        ? payload.data.length + ' active pickup point(s) found.' + (selectFirst && pointCode.value ? ' The first point was selected; choose another if needed.' : ' Select one to fill the code.')
                         : 'No active pickup points were found for this location.';
                 } catch (error) {
                     feedback.textContent = error.message || 'CDEK pickup points could not be loaded.';
                 } finally {
                     loadButton.disabled = false;
                 }
-            });
+                return true;
+            };
+
+            const loadLocation = async () => {
+                if (locationCode.value.trim() || !city.value.trim() || !countryCode.value.trim()) return;
+
+                locationFeedback.textContent = 'Finding the CDEK location for ' + city.value.trim() + '…';
+                try {
+                    const response = await fetch(locationFeedback.dataset.url + '?city=' + encodeURIComponent(city.value.trim()) + '&country_code=' + encodeURIComponent(countryCode.value.trim()), { headers: { Accept: 'application/json' } });
+                    const payload = await response.json();
+                    if (!response.ok || !payload.data?.length) throw new Error(payload.message || 'No CDEK location was found for this city.');
+                    locationCode.value = payload.data[0].code;
+                    locationFeedback.textContent = 'CDEK location ' + payload.data[0].code + ' was selected for ' + payload.data[0].name + '.';
+                    await loadPickupPoints(true);
+                } catch (error) {
+                    locationFeedback.textContent = error.message || 'CDEK location lookup could not be completed.';
+                }
+            };
+
+            loadButton?.addEventListener('click', () => loadPickupPoints(false));
+            city?.addEventListener('change', () => { locationCode.value = ''; pointCode.value = ''; loadLocation(); });
+            countryCode?.addEventListener('change', () => { locationCode.value = ''; pointCode.value = ''; loadLocation(); });
+            loadLocation();
 
             results?.addEventListener('change', () => {
                 if (results.value) {

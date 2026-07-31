@@ -25,6 +25,10 @@ class UpdateCdekSettingsRequest extends FormRequest
             'sender_address' => ['nullable', 'string', 'max:1000'],
             'sender_pickup_point_code' => ['nullable', 'string', 'max:100'],
             'default_tariff_code' => ['nullable', 'integer', 'min:1'],
+            'default_weight_grams' => ['nullable', 'integer', 'min:1', 'max:300000'],
+            'default_length_cm' => ['nullable', 'integer', 'min:1', 'max:500'],
+            'default_width_cm' => ['nullable', 'integer', 'min:1', 'max:500'],
+            'default_height_cm' => ['nullable', 'integer', 'min:1', 'max:500'],
         ];
     }
 }

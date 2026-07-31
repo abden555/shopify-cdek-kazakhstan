@@ -79,13 +79,30 @@ final readonly class ShopifyOrderSyncService
                         'unit_price' => $item['originalUnitPriceSet']['shopMoney']['amount'] ?? 0,
                         'discount_amount' => $item['discountedTotalSet']['shopMoney']['amount'] ?? 0,
                         'total_amount' => $item['discountedTotalSet']['shopMoney']['amount'] ?? 0,
-                        // Product inventory data requires additional Shopify scopes; order sync needs only read_orders.
-                        'weight_grams' => null,
+                        'weight_grams' => $this->weightInGrams($item['weight'] ?? null),
                         'metadata' => ['shopify' => ['requires_shipping' => $item['requiresShipping'] ?? false]],
                     ],
                 );
             }
         });
+    }
+
+    /** @param array<string, mixed>|null $weight */
+    private function weightInGrams(?array $weight): ?int
+    {
+        if (! isset($weight['value']) || ! is_numeric($weight['value'])) {
+            return null;
+        }
+
+        $value = (float) $weight['value'];
+        $multiplier = match ($weight['unit'] ?? 'GRAMS') {
+            'KILOGRAMS' => 1000,
+            'OUNCES' => 28.349523125,
+            'POUNDS' => 453.59237,
+            default => 1,
+        };
+
+        return max(1, (int) round($value * $multiplier));
     }
 
     private const ORDERS_QUERY = <<<'GRAPHQL'
@@ -104,6 +121,7 @@ final readonly class ShopifyOrderSyncService
               lineItems(first: 100) {
                 nodes {
                   id sku title variantTitle quantity currentQuantity requiresShipping
+                  weight { value unit }
                   originalUnitPriceSet { shopMoney { amount } }
                   discountedTotalSet { shopMoney { amount } }
                 }
