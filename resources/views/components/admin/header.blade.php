@@ -16,6 +16,7 @@
         </button>
         <div class="d-none d-sm-block text-end">
             <a class="fw-semibold small text-decoration-none text-body" href="{{ route('admin.account.edit') }}">{{ auth()->user()->name }}</a>
+            <a class="d-block small account-link" href="{{ route('admin.account.edit') }}">My account</a>
             <form action="{{ route('logout') }}" method="POST">
                 @csrf
                 <button class="btn btn-link btn-sm p-0 text-body-secondary" type="submit">Sign out</button>

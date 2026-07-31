@@ -24,6 +24,7 @@
             <span class="sidebar-label">Configuration</span>
             <a class="nav-link {{ request()->routeIs('admin.settings.cdek.*') ? 'active' : '' }}" href="{{ route('admin.settings.cdek.edit') }}"><i class="bi bi-plug"></i>Integrations</a>
             <a class="nav-link {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}" href="{{ route('admin.settings.cdek.edit') }}"><i class="bi bi-gear"></i>Settings</a>
+            <a class="nav-link {{ request()->routeIs('admin.account.*') ? 'active' : '' }}" href="{{ route('admin.account.edit') }}"><i class="bi bi-person-gear"></i>My account</a>
         </nav>
 
         <div class="sidebar-footer mt-auto">
